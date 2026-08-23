@@ -23,14 +23,24 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
-            MethodArgumentNotValidException ex
-    ) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException() {
         ErrorResponse errorResponse =
                 new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Validation failed for one or more arguments");
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(AdNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAdNotFoundException(
+            AdNotFoundException ex
+    ) {
+        ErrorResponse errorResponse =
+                new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(errorResponse);
     }
 }

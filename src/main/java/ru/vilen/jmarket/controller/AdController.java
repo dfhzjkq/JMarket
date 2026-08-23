@@ -25,4 +25,9 @@ public class AdController {
     public List<AdResponse> findAll() {
         return adService.findAll();
     }
+
+    @GetMapping("/{id}")
+    public AdResponse findById(@PathVariable Long id) {
+        return adService.findById(id);
+    }
 }

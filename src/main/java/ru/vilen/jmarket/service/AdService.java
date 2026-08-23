@@ -7,6 +7,7 @@ import ru.vilen.jmarket.dto.AdCreateRequest;
 import ru.vilen.jmarket.dto.AdResponse;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
+import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.repository.AdRepository;
 import ru.vilen.jmarket.repository.UserRepository;
@@ -36,6 +37,13 @@ public class AdService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdResponse findById(Long id) {
+        Ad ad = adRepository.findById(id)
+                .orElseThrow(() -> new AdNotFoundException(id));
+        return toResponse(ad);
     }
 
     private Ad toEntity(AdCreateRequest request, User author) {
