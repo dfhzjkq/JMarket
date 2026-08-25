@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AdServiceTest {
+public class AdServiceTest {
 
     @InjectMocks
     private AdService adService;

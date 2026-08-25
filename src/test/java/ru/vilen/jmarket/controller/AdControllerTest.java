@@ -1,0 +1,203 @@
+package ru.vilen.jmarket.controller;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import ru.vilen.jmarket.dto.AdCreateRequest;
+import ru.vilen.jmarket.dto.AdResponse;
+import ru.vilen.jmarket.exception.AdNotFoundException;
+import ru.vilen.jmarket.exception.UserNotFoundException;
+import ru.vilen.jmarket.service.AdService;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(AdController.class)
+public class AdControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private AdService adService;
+
+    @Test
+    void create_shouldReturnAdResponse_whenRequestIsValid() throws Exception {
+        AdResponse response = new AdResponse(
+                10L,
+                "Phone",
+                "Good phone",
+                new BigDecimal("15000.00"),
+                1L
+        );
+
+        when(adService.create(any(AdCreateRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/ads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Phone",
+                          "description": "Good phone",
+                          "price": 15000.00,
+                          "authorId": 1
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.title").value("Phone"))
+                .andExpect(jsonPath("$.description").value("Good phone"))
+                .andExpect(jsonPath("$.price").value(15000.00))
+                .andExpect(jsonPath("$.authorId").value(1));
+
+        ArgumentCaptor<AdCreateRequest> requestCaptor =
+                ArgumentCaptor.forClass(AdCreateRequest.class);
+
+        verify(adService).create(requestCaptor.capture());
+
+        AdCreateRequest actualRequest = requestCaptor.getValue();
+
+        assertThat(actualRequest.title()).isEqualTo("Phone");
+        assertThat(actualRequest.description()).isEqualTo("Good phone");
+        assertThat(actualRequest.price()).isEqualByComparingTo("15000.00");
+        assertThat(actualRequest.authorId()).isEqualTo(1L);
+    }
+
+    @Test
+    void create_shouldReturnBadRequest_whenTitleIsBlank() throws Exception {
+        mockMvc.perform(post("/api/ads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "title": "",
+                              "description": "Good phone",
+                              "price": 15000.00,
+                              "authorId": 1
+                            }
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(adService, never())
+                .create(any(AdCreateRequest.class));
+    }
+
+    @Test
+    void create_shouldReturnNotFound_whenAuthorDoesNotExist() throws Exception {
+        when(adService.create(any(AdCreateRequest.class)))
+                .thenThrow(new UserNotFoundException(999L));
+
+        mockMvc.perform(post("/api/ads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "title": "Phone",
+                              "description": "Good phone",
+                              "price": 15000.00,
+                              "authorId": 999
+                            }
+                            """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message")
+                        .value("User with ID 999 not found"));
+
+        verify(adService).create(any(AdCreateRequest.class));
+    }
+
+    @Test
+    void findById_shouldReturnAdResponse_whenAdExists() throws Exception {
+        AdResponse response = new AdResponse(
+                1L,
+                "Phone",
+                "Good phone",
+                new BigDecimal("15000.00"),
+                1L
+        );
+
+        when(adService.findById(1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/ads/1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Phone"))
+                .andExpect(jsonPath("$.description").value("Good phone"))
+                .andExpect(jsonPath("$.price").value(15000.00))
+                .andExpect(jsonPath("$.authorId").value(1));
+
+        verify(adService).findById(1L);
+    }
+
+    @Test
+    void findById_shouldReturnNotFound_whenAdDoesNotExist() throws Exception {
+        when(adService.findById(999L))
+                .thenThrow(new AdNotFoundException(999L));
+
+        mockMvc.perform(get("/api/ads/999")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message")
+                        .value("Ad with ID 999 not found"));
+
+        verify(adService).findById(999L);
+    }
+
+    @Test
+    void findAll_shouldReturnListOfAdResponses_whenAdsExist() throws Exception {
+        List<AdResponse> response = List.of(
+                new AdResponse(
+                        1L,
+                        "Phone",
+                        "Good phone",
+                        new BigDecimal("15000.00"),
+                        1L
+                )
+        );
+
+        when(adService.findAll())
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/ads")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("Phone"))
+                .andExpect(jsonPath("$[0].description").value("Good phone"))
+                .andExpect(jsonPath("$[0].price").value(15000.00))
+                .andExpect(jsonPath("$[0].authorId").value(1));
+
+        verify(adService).findAll();
+    }
+
+    @Test
+    void findAll_shouldReturnEmptyList_whenAdsDoNotExist() throws Exception {
+        when(adService.findAll())
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/ads")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        verify(adService).findAll();
+    }
+}
