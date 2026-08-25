@@ -9,6 +9,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.dto.AdCreateRequest;
 import ru.vilen.jmarket.dto.AdResponse;
+import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.service.AdService;
@@ -19,8 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -199,5 +199,90 @@ public class AdControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
 
         verify(adService).findAll();
+    }
+
+    @Test
+    void update_shouldReturnAdResponse_whenRequestIsValid() throws Exception {
+        AdResponse response = new AdResponse(
+                1L,
+                "Updated Phone",
+                "Updated description",
+                new BigDecimal("20000.00"),
+                1L
+        );
+
+        when(adService.update(eq(1L), any(AdUpdateRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(put("/api/ads/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Updated Phone",
+                                  "description": "Updated description",
+                                  "price": 20000.00
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Updated Phone"))
+                .andExpect(jsonPath("$.description").value("Updated description"))
+                .andExpect(jsonPath("$.price").value(20000.00))
+                .andExpect(jsonPath("$.authorId").value(1));
+
+        ArgumentCaptor<AdUpdateRequest> requestCaptor =
+                ArgumentCaptor.forClass(AdUpdateRequest.class);
+
+        verify(adService)
+                .update(eq(1L), requestCaptor.capture());
+
+        AdUpdateRequest actualRequest = requestCaptor.getValue();
+
+        assertThat(actualRequest.title()).isEqualTo("Updated Phone");
+        assertThat(actualRequest.description()).isEqualTo("Updated description");
+        assertThat(actualRequest.price()).isEqualByComparingTo("20000.00");
+    }
+
+    @Test
+    void update_shouldReturnNotFound_whenAdDoesNotExist() throws Exception {
+        when(adService.update(eq(999L), any(AdUpdateRequest.class)))
+                .thenThrow(new AdNotFoundException(999L));
+
+        mockMvc.perform(put("/api/ads/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "title": "Updated Phone",
+                          "description": "Updated description",
+                          "price": 20000.00
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message")
+                        .value("Ad with ID 999 not found"));
+
+        verify(adService)
+                .update(eq(999L), any(AdUpdateRequest.class));
+    }
+
+    @Test
+    void update_shouldReturnBadRequest_whenTitleIsBlank() throws Exception {
+        mockMvc.perform(put("/api/ads/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "title": "",
+                          "description": "Updated description",
+                          "price": 20000.00
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(adService, never())
+                .update(eq(1L), any(AdUpdateRequest.class));
     }
 }

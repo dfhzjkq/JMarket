@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.vilen.jmarket.dto.AdCreateRequest;
 import ru.vilen.jmarket.dto.AdResponse;
+import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -178,5 +179,56 @@ public class AdServiceTest {
         List<AdResponse> actual = adService.findAll();
         assertThat(actual).isEmpty();
         verify(adRepository).findAll();
+    }
+
+    @Test
+    void update_shouldReturnUpdatedAdResponse_whenAdExists() {
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail("ivan@example.com");
+
+        Ad ad = new Ad();
+        ad.setId(10L);
+        ad.setTitle("Old Phone");
+        ad.setDescription("Old phone description");
+        ad.setPrice(new BigDecimal("10000.00"));
+        ad.setAuthor(author);
+
+        when(adRepository.findById(10L))
+                .thenReturn(Optional.of(ad));
+
+        AdResponse actual = adService.update(10L, new AdUpdateRequest(
+                "New Phone",
+                "New phone description",
+                new BigDecimal("15000.00")
+        ));
+        assertThat(actual.id()).isEqualTo(10L);
+        assertThat(actual.title()).isEqualTo("New Phone");
+        assertThat(actual.description()).isEqualTo("New phone description");
+        assertThat(actual.price()).isEqualByComparingTo("15000.00");
+        assertThat(actual.authorId()).isEqualTo(1L);
+
+        assertThat(ad.getTitle()).isEqualTo("New Phone");
+        assertThat(ad.getDescription()).isEqualTo("New phone description");
+        assertThat(ad.getPrice()).isEqualByComparingTo("15000.00");
+
+        verify(adRepository).findById(10L);
+    }
+
+    @Test
+    void update_shouldThrowAdNotFoundException_whenAdDoesNotExist() {
+        when(adRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adService.update(999L, new AdUpdateRequest(
+                "New Phone",
+                "New phone description",
+                new BigDecimal("15000.00")
+        )))
+                .isInstanceOf(AdNotFoundException.class)
+                .hasMessage("Ad with ID 999 not found");
+
+        verify(adRepository).findById(999L);
     }
 }

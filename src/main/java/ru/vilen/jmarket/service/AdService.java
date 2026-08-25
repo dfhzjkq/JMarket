@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vilen.jmarket.dto.AdCreateRequest;
 import ru.vilen.jmarket.dto.AdResponse;
+import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -43,6 +44,18 @@ public class AdService {
     public AdResponse findById(Long id) {
         Ad ad = adRepository.findById(id)
                 .orElseThrow(() -> new AdNotFoundException(id));
+        return toResponse(ad);
+    }
+
+    @Transactional
+    public AdResponse update(Long id, AdUpdateRequest request) {
+        Ad ad = adRepository.findById(id)
+                .orElseThrow(() -> new AdNotFoundException(id));
+
+        ad.setTitle(request.title());
+        ad.setDescription(request.description());
+        ad.setPrice(request.price());
+
         return toResponse(ad);
     }
 
