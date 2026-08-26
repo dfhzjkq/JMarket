@@ -56,7 +56,7 @@ public class AdControllerTest {
                           "authorId": 1
                         }
                         """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.title").value("Phone"))
                 .andExpect(jsonPath("$.description").value("Good phone"))
@@ -284,5 +284,27 @@ public class AdControllerTest {
 
         verify(adService, never())
                 .update(eq(1L), any(AdUpdateRequest.class));
+    }
+
+    @Test
+    void delete_shouldReturnNoContent_whenAdExists() throws Exception {
+        mockMvc.perform(delete("/api/ads/1"))
+                .andExpect(status().isNoContent());
+
+        verify(adService).delete(1L);
+    }
+
+    @Test
+    void delete_shouldReturnNotFound_whenAdDoesNotExist() throws Exception {
+        doThrow(new AdNotFoundException(999L))
+                .when(adService).delete(999L);
+
+        mockMvc.perform(delete("/api/ads/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message")
+                        .value("Ad with ID 999 not found"));
+
+        verify(adService).delete(999L);
     }
 }

@@ -2,6 +2,7 @@ package ru.vilen.jmarket.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.vilen.jmarket.dto.AdCreateRequest;
 import ru.vilen.jmarket.dto.AdResponse;
@@ -18,6 +19,7 @@ public class AdController {
     private final AdService adService;
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public AdResponse create(@Valid @RequestBody AdCreateRequest request) {
         return adService.create(request);
     }
@@ -35,5 +37,11 @@ public class AdController {
     @PutMapping("/{id}")
     public AdResponse update(@PathVariable Long id, @Valid @RequestBody AdUpdateRequest request) {
         return adService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        adService.delete(id);
     }
 }

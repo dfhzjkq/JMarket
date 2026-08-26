@@ -59,6 +59,13 @@ public class AdService {
         return toResponse(ad);
     }
 
+    @Transactional
+    public void delete(Long id) {
+        Ad ad = adRepository.findById(id)
+                .orElseThrow(() -> new AdNotFoundException(id));
+        adRepository.delete(ad);
+    }
+
     private Ad toEntity(AdCreateRequest request, User author) {
         Ad ad = new Ad();
         ad.setTitle(request.title());

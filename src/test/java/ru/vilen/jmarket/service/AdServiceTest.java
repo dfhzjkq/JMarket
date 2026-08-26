@@ -231,4 +231,40 @@ public class AdServiceTest {
 
         verify(adRepository).findById(999L);
     }
+
+    @Test
+    void delete_shouldDeleteAd_whenAdExists() {
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail("ivan@example.com");
+
+        Ad ad = new Ad();
+        ad.setId(10L);
+        ad.setTitle("Phone");
+        ad.setDescription("Good phone");
+        ad.setPrice(new BigDecimal("15000.00"));
+        ad.setAuthor(author);
+
+        when(adRepository.findById(10L))
+                .thenReturn(Optional.of(ad));
+
+        adService.delete(10L);
+
+        verify(adRepository).findById(10L);
+        verify(adRepository).delete(ad);
+    }
+
+    @Test
+    void delete_shouldThrowAdNotFoundException_whenAdDoesNotExist() {
+        when(adRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adService.delete(999L))
+                .isInstanceOf(AdNotFoundException.class)
+                .hasMessage("Ad with ID 999 not found");
+
+        verify(adRepository).findById(999L);
+        verify(adRepository, never()).delete(any(Ad.class));
+    }
 }
