@@ -34,7 +34,7 @@ public class Ad {
 
     @NotNull
     @DecimalMin(value = "0.00")
-    @Column(name = "price", nullable = false)
+    @Column(name = "price", nullable = false, precision = 13, scale = 2)
     private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
