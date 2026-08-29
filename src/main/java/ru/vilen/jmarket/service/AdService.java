@@ -1,9 +1,11 @@
 package ru.vilen.jmarket.service;
 
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vilen.jmarket.dto.AdCreateRequest;
+import ru.vilen.jmarket.dto.AdPageResponse;
 import ru.vilen.jmarket.dto.AdResponse;
 import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.entity.Ad;
@@ -13,6 +15,7 @@ import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.repository.AdRepository;
 import ru.vilen.jmarket.repository.UserRepository;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 @Service
@@ -33,11 +36,23 @@ public class AdService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdResponse> findAll() {
-        return adRepository.findAll()
+    public AdPageResponse findAll(Pageable pageable) {
+        Page<Ad> adPage = adRepository.findAll(pageable);
+
+        List<AdResponse> content = adPage.getContent()
                 .stream()
                 .map(this::toResponse)
                 .toList();
+
+        return new AdPageResponse(
+                content,
+                adPage.getNumber(),
+                adPage.getSize(),
+                adPage.getTotalElements(),
+                adPage.getTotalPages(),
+                adPage.isFirst(),
+                adPage.isLast()
+        );
     }
 
     @Transactional(readOnly = true)

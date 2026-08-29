@@ -4,10 +4,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.dto.AdCreateRequest;
+import ru.vilen.jmarket.dto.AdPageResponse;
 import ru.vilen.jmarket.dto.AdResponse;
 import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -161,44 +164,145 @@ class AdControllerTest {
     }
 
     @Test
-    void findAll_shouldReturnListOfAdResponses_whenAdsExist() throws Exception {
-        List<AdResponse> response = List.of(
-                new AdResponse(
-                        1L,
-                        "Phone",
-                        "Good phone",
-                        new BigDecimal("15000.00"),
-                        1L
-                )
+    void findAll_shouldReturnAdPageResponse_whenAdsExist() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(
+                        new AdResponse(
+                                1L,
+                                "Phone",
+                                "Good phone",
+                                new BigDecimal("15000.00"),
+                                1L
+                        )
+                ),
+                0,
+                20,
+                1,
+                1,
+                true,
+                true
         );
 
-        when(adService.findAll())
+        when(adService.findAll(any(Pageable.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/ads")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Phone"))
+                .andExpect(jsonPath("$.content[0].description").value("Good phone"))
+                .andExpect(jsonPath("$.content[0].price").value(15000.00))
+                .andExpect(jsonPath("$.content[0].authorId").value(1))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
+
+
+        verify(adService).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void findAll_shouldReturnEmptyPage_whenAdsDoNotExist() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(),
+                0,
+                20,
+                0,
+                0,
+                true,
+                true
+        );
+
+        when(adService.findAll(any(Pageable.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/ads")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
+
+        ArgumentCaptor<Pageable> captor =
+                ArgumentCaptor.forClass(Pageable.class);
+        verify(adService).findAll(captor.capture());
+
+        Pageable actual = captor.getValue();
+        assertThat(actual.getPageNumber()).isZero();
+        assertThat(actual.getPageSize()).isEqualTo(20);
+    }
+
+    @Test
+    void findAll_shouldUseDefaultPaginationAndSorting_whenParametersAreNotProvided() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(),
+                0,
+                20,
+                0,
+                0,
+                true,
+                true
+        );
+
+        when(adService.findAll(any(Pageable.class)))
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/ads")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].title").value("Phone"))
-                .andExpect(jsonPath("$[0].description").value("Good phone"))
-                .andExpect(jsonPath("$[0].price").value(15000.00))
-                .andExpect(jsonPath("$[0].authorId").value(1));
+                .andExpect(status().isOk());
 
-        verify(adService).findAll();
+        ArgumentCaptor<Pageable> captor =
+                ArgumentCaptor.forClass(Pageable.class);
+        verify(adService).findAll(captor.capture());
+
+        Pageable actual = captor.getValue();
+        assertThat(actual.getPageNumber()).isZero();
+        assertThat(actual.getPageSize()).isEqualTo(20);
+
+        Sort.Order idOrder = actual.getSort().getOrderFor("id");
+        assertThat(idOrder).isNotNull();
+        assertThat(idOrder.getDirection()).isEqualTo(Sort.Direction.DESC);
     }
 
     @Test
-    void findAll_shouldReturnEmptyList_whenAdsDoNotExist() throws Exception {
-        when(adService.findAll())
-                .thenReturn(List.of());
+    void findAll_shouldLimitPageSize_whenRequestedSizeExceedsMaximum() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(),
+                0,
+                100,
+                0,
+                0,
+                true,
+                true
+        );
+
+        when(adService.findAll(any(Pageable.class)))
+                .thenReturn(response);
 
         mockMvc.perform(get("/api/ads")
+                        .param("size", "500")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(status().isOk());
 
-        verify(adService).findAll();
+        ArgumentCaptor<Pageable> captor =
+                ArgumentCaptor.forClass(Pageable.class);
+        verify(adService).findAll(captor.capture());
+
+        Pageable actual = captor.getValue();
+        assertThat(actual.getPageSize()).isEqualTo(100);
     }
 
     @Test

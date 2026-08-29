@@ -2,14 +2,16 @@ package ru.vilen.jmarket.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.vilen.jmarket.dto.AdCreateRequest;
+import ru.vilen.jmarket.dto.AdPageResponse;
 import ru.vilen.jmarket.dto.AdResponse;
 import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.service.AdService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/ads")
@@ -25,8 +27,15 @@ public class AdController {
     }
 
     @GetMapping
-    public List<AdResponse> findAll() {
-        return adService.findAll();
+    public AdPageResponse findAll(
+            @PageableDefault(
+                    size = 20,
+                    sort = "id",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
+    ) {
+        return adService.findAll(pageable);
     }
 
     @GetMapping("/{id}")

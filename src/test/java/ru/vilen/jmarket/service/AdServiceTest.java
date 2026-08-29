@@ -6,7 +6,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import ru.vilen.jmarket.dto.AdCreateRequest;
+import ru.vilen.jmarket.dto.AdPageResponse;
 import ru.vilen.jmarket.dto.AdResponse;
 import ru.vilen.jmarket.dto.AdUpdateRequest;
 import ru.vilen.jmarket.entity.Ad;
@@ -142,7 +147,7 @@ class AdServiceTest {
     }
 
     @Test
-    void findAll_shouldReturnListOfAdResponses_whenAdsExist() {
+    void findAll_shouldReturnAdPageResponse_whenAdsExist() {
         User author = new User();
         author.setId(1L);
         author.setName("Ivan");
@@ -155,30 +160,61 @@ class AdServiceTest {
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
 
-        when(adRepository.findAll())
-                .thenReturn(List.of(ad));
+        Pageable pageable = PageRequest.of(0, 20);
 
-        List<AdResponse> actual = adService.findAll();
+        Page<Ad> adPage = new PageImpl<>(
+                List.of(ad),
+                pageable,
+                1
+        );
 
-        assertThat(actual).hasSize(1);
+        when(adRepository.findAll(pageable))
+                .thenReturn(adPage);
 
-        AdResponse response = actual.getFirst();
-        assertThat(response.id()).isEqualTo(10L);
-        assertThat(response.title()).isEqualTo("Phone");
-        assertThat(response.description()).isEqualTo("Good phone");
-        assertThat(response.price()).isEqualByComparingTo("15000.00");
-        assertThat(response.authorId()).isEqualTo(1L);
-        verify(adRepository).findAll();
+        AdPageResponse actual = adService.findAll(pageable);
+
+        AdResponse response = new AdResponse(
+                ad.getId(),
+                ad.getTitle(),
+                ad.getDescription(),
+                ad.getPrice(),
+                ad.getAuthor().getId()
+        );
+
+        assertThat(actual.content()).isEqualTo(List.of(response));
+        assertThat(actual.page()).isZero();
+        assertThat(actual.size()).isEqualTo(20);
+        assertThat(actual.totalElements()).isEqualTo(1);
+        assertThat(actual.totalPages()).isEqualTo(1);
+        assertThat(actual.first()).isTrue();
+        assertThat(actual.last()).isTrue();
+
+        verify(adRepository).findAll(pageable);
     }
 
     @Test
-    void findAll_shouldReturnEmptyList_whenNoAdsExist() {
-        when(adRepository.findAll())
-                .thenReturn(List.of());
+    void findAll_shouldReturnEmptyPage_whenNoAdsExist() {
+        Pageable pageable = PageRequest.of(0, 20);
 
-        List<AdResponse> actual = adService.findAll();
-        assertThat(actual).isEmpty();
-        verify(adRepository).findAll();
+        Page<Ad> emptyPage = new PageImpl<>(
+                List.of(),
+                pageable,
+                0
+        );
+
+        when(adRepository.findAll(pageable))
+                .thenReturn(emptyPage);
+
+        AdPageResponse actual = adService.findAll(pageable);
+        assertThat(actual.content()).isEmpty();
+        assertThat(actual.page()).isZero();
+        assertThat(actual.size()).isEqualTo(20);
+        assertThat(actual.totalElements()).isZero();
+        assertThat(actual.totalPages()).isZero();
+        assertThat(actual.first()).isTrue();
+        assertThat(actual.last()).isTrue();
+
+        verify(adRepository).findAll(pageable);
     }
 
     @Test
