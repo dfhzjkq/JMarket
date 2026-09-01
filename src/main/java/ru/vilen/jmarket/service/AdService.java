@@ -39,7 +39,8 @@ public class AdService {
     public AdPageResponse findAll(Pageable pageable, AdFilter adFilter) {
         Specification<Ad> specification = Specification.allOf(
                 AdSpecifications.hasMinPrice(adFilter.minPrice()),
-                AdSpecifications.hasMaxPrice(adFilter.maxPrice())
+                AdSpecifications.hasMaxPrice(adFilter.maxPrice()),
+                AdSpecifications.hasAuthorId(adFilter.authorId())
         );
 
         Page<Ad> adPage = adRepository.findAll(specification, pageable);

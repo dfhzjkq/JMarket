@@ -102,7 +102,6 @@ class AdRepositoryTest {
                 AdSpecifications.hasMinPrice(new BigDecimal("51000.00")),
                 AdSpecifications.hasMaxPrice(new BigDecimal("60000.00"))
         );
-
         Pageable pageable = PageRequest.of(0, 20);
 
         Page<Ad> adPage = adRepository.findAll(specification, pageable);
@@ -113,6 +112,50 @@ class AdRepositoryTest {
                 .satisfies(ad -> {
                     assertThat(ad.getTitle()).isEqualTo("PS5 Slim");
                     assertThat(ad.getPrice()).isEqualByComparingTo("55000.00");
+                });
+    }
+
+    @Test
+    void findAll_shouldReturnOnlyAuthorsAds_whenAuthorIdSpecificationIsApplied() {
+        User author1 = new User();
+        author1.setName("Ivan");
+        author1.setEmail("ivan@example.com");
+        User savedAuthor1 = userRepository.save(author1);
+
+        User author2 = new User();
+        author2.setName("Sergey");
+        author2.setEmail("sergey@example.com");
+        User savedAuthor2 = userRepository.save(author2);
+
+        Ad ad1 = new Ad();
+        ad1.setTitle("PS5");
+        ad1.setDescription("New PS5");
+        ad1.setPrice(new BigDecimal("50000.00"));
+        ad1.setAuthor(savedAuthor1);
+        adRepository.save(ad1);
+
+        Ad ad2 = new Ad();
+        ad2.setTitle("PS5 Slim");
+        ad2.setDescription("New PS5 Slim");
+        ad2.setPrice(new BigDecimal("55000.00"));
+        ad2.setAuthor(savedAuthor2);
+        adRepository.save(ad2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Specification<Ad> specification = AdSpecifications.hasAuthorId(savedAuthor1.getId());
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<Ad> adPage = adRepository.findAll(specification, pageable);
+
+        assertThat(adPage.getContent())
+                .singleElement()
+                .satisfies(ad -> {
+                    assertThat(ad.getTitle()).isEqualTo("PS5");
+                    assertThat(ad.getPrice()).isEqualByComparingTo("50000.00");
+                    assertThat(ad.getAuthor().getId())
+                            .isEqualTo(savedAuthor1.getId());
                 });
     }
 }

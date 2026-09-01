@@ -33,4 +33,13 @@ public final class AdSpecifications {
                         maxPrice
                 );
     }
+
+    public static Specification<Ad> hasAuthorId(Long authorId) {
+        if (authorId == null) {
+            return Specification.unrestricted();
+        }
+
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("author").get("id"), authorId);
+    }
 }
