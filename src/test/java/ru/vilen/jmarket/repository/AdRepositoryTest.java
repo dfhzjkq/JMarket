@@ -6,9 +6,14 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.TestcontainersConfiguration;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
+import ru.vilen.jmarket.specification.AdSpecifications;
 
 import java.math.BigDecimal;
 
@@ -59,5 +64,55 @@ class AdRepositoryTest {
 
         assertThat(foundAd.getAuthor().getId()).isEqualTo(savedAuthor.getId());
         assertThat(foundAd.getAuthor().getEmail()).isEqualTo("ivan@example.com");
+    }
+
+    @Test
+    void findAll_shouldReturnAdsWithinPriceRange_whenPriceSpecificationsAreApplied() {
+        User author = new User();
+        author.setName("Ivan");
+        author.setEmail("ivan@example.com");
+
+        User savedAuthor = userRepository.save(author);
+
+        Ad ad1 = new Ad();
+        ad1.setTitle("PS5");
+        ad1.setDescription("New PS5");
+        ad1.setPrice(new BigDecimal("50000.00"));
+        ad1.setAuthor(savedAuthor);
+        adRepository.save(ad1);
+
+        Ad ad2 = new Ad();
+        ad2.setTitle("PS5 Slim");
+        ad2.setDescription("New PS5 Slim");
+        ad2.setPrice(new BigDecimal("55000.00"));
+        ad2.setAuthor(savedAuthor);
+        adRepository.save(ad2);
+
+        Ad ad3 = new Ad();
+        ad3.setTitle("PS5 Pro");
+        ad3.setDescription("New PS5 Pro");
+        ad3.setPrice(new BigDecimal("62000.00"));
+        ad3.setAuthor(savedAuthor);
+        adRepository.save(ad3);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Specification<Ad> specification = Specification.allOf(
+                AdSpecifications.hasMinPrice(new BigDecimal("51000.00")),
+                AdSpecifications.hasMaxPrice(new BigDecimal("60000.00"))
+        );
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<Ad> adPage = adRepository.findAll(specification, pageable);
+        assertThat(adPage.getTotalElements()).isEqualTo(1);
+
+        assertThat(adPage.getContent())
+                .singleElement()
+                .satisfies(ad -> {
+                    assertThat(ad.getTitle()).isEqualTo("PS5 Slim");
+                    assertThat(ad.getPrice()).isEqualByComparingTo("55000.00");
+                });
     }
 }

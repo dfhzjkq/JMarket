@@ -9,10 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.vilen.jmarket.dto.AdCreateRequest;
-import ru.vilen.jmarket.dto.AdPageResponse;
-import ru.vilen.jmarket.dto.AdResponse;
-import ru.vilen.jmarket.dto.AdUpdateRequest;
+import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.service.AdService;
@@ -183,8 +180,10 @@ class AdControllerTest {
                 true
         );
 
-        when(adService.findAll(any(Pageable.class)))
-                .thenReturn(response);
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
 
         mockMvc.perform(get("/api/ads")
                         .accept(MediaType.APPLICATION_JSON)
@@ -205,7 +204,10 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.last").value(true));
 
 
-        verify(adService).findAll(any(Pageable.class));
+        verify(adService).findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        );
     }
 
     @Test
@@ -220,8 +222,10 @@ class AdControllerTest {
                 true
         );
 
-        when(adService.findAll(any(Pageable.class)))
-                .thenReturn(response);
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
 
         mockMvc.perform(get("/api/ads")
                         .accept(MediaType.APPLICATION_JSON)
@@ -238,7 +242,10 @@ class AdControllerTest {
 
         ArgumentCaptor<Pageable> captor =
                 ArgumentCaptor.forClass(Pageable.class);
-        verify(adService).findAll(captor.capture());
+        verify(adService).findAll(
+                captor.capture(),
+                any(AdFilter.class)
+        );
 
         Pageable actual = captor.getValue();
         assertThat(actual.getPageNumber()).isZero();
@@ -257,8 +264,10 @@ class AdControllerTest {
                 true
         );
 
-        when(adService.findAll(any(Pageable.class)))
-                .thenReturn(response);
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
 
         mockMvc.perform(get("/api/ads")
                         .accept(MediaType.APPLICATION_JSON))
@@ -266,7 +275,10 @@ class AdControllerTest {
 
         ArgumentCaptor<Pageable> captor =
                 ArgumentCaptor.forClass(Pageable.class);
-        verify(adService).findAll(captor.capture());
+        verify(adService).findAll(
+                captor.capture(),
+                any(AdFilter.class)
+        );
 
         Pageable actual = captor.getValue();
         assertThat(actual.getPageNumber()).isZero();
@@ -289,8 +301,10 @@ class AdControllerTest {
                 true
         );
 
-        when(adService.findAll(any(Pageable.class)))
-                .thenReturn(response);
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
 
         mockMvc.perform(get("/api/ads")
                         .param("size", "500")
@@ -299,10 +313,67 @@ class AdControllerTest {
 
         ArgumentCaptor<Pageable> captor =
                 ArgumentCaptor.forClass(Pageable.class);
-        verify(adService).findAll(captor.capture());
+        verify(adService).findAll(
+                captor.capture(),
+                any(AdFilter.class)
+        );
 
         Pageable actual = captor.getValue();
         assertThat(actual.getPageSize()).isEqualTo(100);
+    }
+
+    @Test
+    void findAll_shouldBindPriceFilters_whenFilterParametersAreProvided() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(),
+                0,
+                20,
+                0,
+                0,
+                true,
+                true
+        );
+
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(get("/api/ads")
+                        .param("minPrice", "1000.00")
+                        .param("maxPrice", "50000.00")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<AdFilter> filterCaptor =
+                ArgumentCaptor.forClass(AdFilter.class);
+
+        verify(adService).findAll(
+                any(Pageable.class),
+                filterCaptor.capture()
+        );
+
+        AdFilter actualFilter = filterCaptor.getValue();
+        assertThat(actualFilter.minPrice())
+                .isEqualByComparingTo("1000.00");
+        assertThat(actualFilter.maxPrice())
+                .isEqualByComparingTo("50000.00");
+    }
+
+    @Test
+    void findAll_shouldReturnBadRequest_whenMinPriceIsNegative() throws Exception {
+        mockMvc.perform(get("/api/ads")
+                .param("minPrice", "-1000.00")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.message")
+                    .value("Validation failed for one or more arguments"));
+
+        verify(adService, never()).findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        );
     }
 
     @Test

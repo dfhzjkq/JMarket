@@ -10,10 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import ru.vilen.jmarket.dto.AdCreateRequest;
-import ru.vilen.jmarket.dto.AdPageResponse;
-import ru.vilen.jmarket.dto.AdResponse;
-import ru.vilen.jmarket.dto.AdUpdateRequest;
+import org.springframework.data.jpa.domain.Specification;
+import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -168,10 +166,20 @@ class AdServiceTest {
                 1
         );
 
-        when(adRepository.findAll(pageable))
-                .thenReturn(adPage);
 
-        AdPageResponse actual = adService.findAll(pageable);
+        AdFilter adFilter = new AdFilter(
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(adRepository.findAll(
+                any(Specification.class),
+                eq(pageable)
+        )).thenReturn(adPage);
+
+        AdPageResponse actual = adService.findAll(pageable, adFilter);
 
         AdResponse response = new AdResponse(
                 ad.getId(),
@@ -189,7 +197,10 @@ class AdServiceTest {
         assertThat(actual.first()).isTrue();
         assertThat(actual.last()).isTrue();
 
-        verify(adRepository).findAll(pageable);
+        verify(adRepository).findAll(
+                any(Specification.class),
+                eq(pageable)
+        );
     }
 
     @Test
@@ -202,10 +213,19 @@ class AdServiceTest {
                 0
         );
 
-        when(adRepository.findAll(pageable))
-                .thenReturn(emptyPage);
+        AdFilter adFilter = new AdFilter(
+                null,
+                null,
+                null,
+                null
+        );
 
-        AdPageResponse actual = adService.findAll(pageable);
+        when(adRepository.findAll(
+                any(Specification.class),
+                eq(pageable)
+        )).thenReturn(emptyPage);
+
+        AdPageResponse actual = adService.findAll(pageable, adFilter);
         assertThat(actual.content()).isEmpty();
         assertThat(actual.page()).isZero();
         assertThat(actual.size()).isEqualTo(20);
@@ -214,7 +234,10 @@ class AdServiceTest {
         assertThat(actual.first()).isTrue();
         assertThat(actual.last()).isTrue();
 
-        verify(adRepository).findAll(pageable);
+        verify(adRepository).findAll(
+                any(Specification.class),
+                eq(pageable)
+        );
     }
 
     @Test

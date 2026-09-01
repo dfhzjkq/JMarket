@@ -2,12 +2,10 @@ package ru.vilen.jmarket.service;
 
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.vilen.jmarket.dto.AdCreateRequest;
-import ru.vilen.jmarket.dto.AdPageResponse;
-import ru.vilen.jmarket.dto.AdResponse;
-import ru.vilen.jmarket.dto.AdUpdateRequest;
+import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -16,6 +14,8 @@ import ru.vilen.jmarket.repository.AdRepository;
 import ru.vilen.jmarket.repository.UserRepository;
 
 import org.springframework.data.domain.Pageable;
+import ru.vilen.jmarket.specification.AdSpecifications;
+
 import java.util.List;
 
 @Service
@@ -36,8 +36,13 @@ public class AdService {
     }
 
     @Transactional(readOnly = true)
-    public AdPageResponse findAll(Pageable pageable) {
-        Page<Ad> adPage = adRepository.findAll(pageable);
+    public AdPageResponse findAll(Pageable pageable, AdFilter adFilter) {
+        Specification<Ad> specification = Specification.allOf(
+                AdSpecifications.hasMinPrice(adFilter.minPrice()),
+                AdSpecifications.hasMaxPrice(adFilter.maxPrice())
+        );
+
+        Page<Ad> adPage = adRepository.findAll(specification, pageable);
 
         List<AdResponse> content = adPage.getContent()
                 .stream()

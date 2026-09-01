@@ -7,10 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.vilen.jmarket.dto.AdCreateRequest;
-import ru.vilen.jmarket.dto.AdPageResponse;
-import ru.vilen.jmarket.dto.AdResponse;
-import ru.vilen.jmarket.dto.AdUpdateRequest;
+import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.service.AdService;
 
 @RestController
@@ -33,9 +30,10 @@ public class AdController {
                     sort = "id",
                     direction = Sort.Direction.DESC
             )
-            Pageable pageable
+            Pageable pageable,
+            @Valid @ModelAttribute AdFilter adFilter
     ) {
-        return adService.findAll(pageable);
+        return adService.findAll(pageable, adFilter);
     }
 
     @GetMapping("/{id}")
