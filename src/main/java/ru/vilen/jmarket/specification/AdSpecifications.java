@@ -4,6 +4,7 @@ import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.entity.Ad;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 
 public final class AdSpecifications {
 
@@ -41,5 +42,25 @@ public final class AdSpecifications {
 
         return (root, query, criteriaBuilder) ->
                 criteriaBuilder.equal(root.get("author").get("id"), authorId);
+    }
+
+    public static Specification<Ad> hasQuery(String searchQuery) {
+        if (searchQuery == null || searchQuery.isBlank()) {
+            return Specification.unrestricted();
+        }
+
+        String pattern = "%" + searchQuery.trim().toLowerCase(Locale.ROOT) + "%";
+
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.or(
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("title")),
+                                pattern
+                        ),
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("description")),
+                                pattern
+                        )
+                );
     }
 }

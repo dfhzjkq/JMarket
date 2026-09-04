@@ -428,6 +428,41 @@ class AdControllerTest {
     }
 
     @Test
+    void findAll_shouldBindQueryFilter_whenQueryParameterIsProvided() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(),
+                0,
+                20,
+                0,
+                0,
+                true,
+                true
+        );
+
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(get("/api/ads")
+                        .param("query", "phone")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<AdFilter> filterCaptor =
+                ArgumentCaptor.forClass(AdFilter.class);
+
+        verify(adService).findAll(
+                any(Pageable.class),
+                filterCaptor.capture()
+        );
+
+        AdFilter actualFilter = filterCaptor.getValue();
+        assertThat(actualFilter.query())
+                .isEqualTo("phone");
+    }
+
+    @Test
     void update_shouldReturnAdResponse_whenRequestIsValid() throws Exception {
         AdResponse response = new AdResponse(
                 1L,

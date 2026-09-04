@@ -158,4 +158,48 @@ class AdRepositoryTest {
                             .isEqualTo(savedAuthor1.getId());
                 });
     }
+
+    @Test
+    void findAll_shouldReturnAdsMatchingTitleOrDescription_whenQuerySpecificationIsApplied() {
+        User author = new User();
+        author.setName("Ivan");
+        author.setEmail("ivan@example.com");
+        userRepository.save(author);
+
+        Ad ad1 = new Ad();
+        ad1.setTitle("Phone");
+        ad1.setDescription("New");
+        ad1.setPrice(new BigDecimal("50000.00"));
+        ad1.setAuthor(author);
+        adRepository.save(ad1);
+
+        Ad ad2 = new Ad();
+        ad2.setTitle("Accessories");
+        ad2.setDescription("Case for PHONE");
+        ad2.setPrice(new BigDecimal("3000.00"));
+        ad2.setAuthor(author);
+        adRepository.save(ad2);
+
+        Ad ad3 = new Ad();
+        ad3.setTitle("Laptop");
+        ad3.setDescription("Gaming computer");
+        ad3.setPrice(new BigDecimal("120000.00"));
+        ad3.setAuthor(author);
+        adRepository.save(ad3);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Specification<Ad> specification =
+                AdSpecifications.hasQuery("phone");
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<Ad> adPage = adRepository.findAll(specification, pageable);
+
+        assertThat(adPage.getTotalElements()).isEqualTo(2);
+        assertThat(adPage.getContent())
+                .extracting(Ad::getTitle)
+                .containsExactlyInAnyOrder("Phone", "Accessories");
+    }
 }

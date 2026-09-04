@@ -38,6 +38,7 @@ public class AdService {
     @Transactional(readOnly = true)
     public AdPageResponse findAll(Pageable pageable, AdFilter adFilter) {
         Specification<Ad> specification = Specification.allOf(
+                AdSpecifications.hasQuery(adFilter.query()),
                 AdSpecifications.hasMinPrice(adFilter.minPrice()),
                 AdSpecifications.hasMaxPrice(adFilter.maxPrice()),
                 AdSpecifications.hasAuthorId(adFilter.authorId())
