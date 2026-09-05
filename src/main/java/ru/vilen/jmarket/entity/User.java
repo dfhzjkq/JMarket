@@ -29,7 +29,7 @@ public class User {
 
     @Email
     @NotBlank
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
     @OneToMany(mappedBy = "author")
