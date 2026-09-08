@@ -32,6 +32,9 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
+
     @OneToMany(mappedBy = "author")
     private List<Ad> ads;
 }

@@ -44,7 +44,8 @@ class UserControllerTest {
                 .content("""
                 {
                     "name": "ivan",
-                    "email": "ivan@example.com"
+                    "email": "ivan@example.com",
+                    "password": "password"
                 }
                 """))
                 .andExpect(status().isCreated())
@@ -58,6 +59,7 @@ class UserControllerTest {
 
         assertThat(actualRequest.name()).isEqualTo("ivan");
         assertThat(actualRequest.email()).isEqualTo("ivan@example.com");
+        assertThat(actualRequest.password()).isEqualTo("password");
     }
 
     @Test
@@ -67,7 +69,8 @@ class UserControllerTest {
                 .content("""
                 {
                     "name": "",
-                    "email": "ivan@example.com"
+                    "email": "ivan@example.com",
+                    "password": "password"
                 }
                 """))
                 .andExpect(status().isBadRequest())
@@ -84,7 +87,8 @@ class UserControllerTest {
                         .content("""
                 {
                     "name": "ivan",
-                    "email": "123"
+                    "email": "123",
+                    "password": "password"
                 }
                 """))
                 .andExpect(status().isBadRequest())
@@ -103,7 +107,8 @@ class UserControllerTest {
                         .content("""
                 {
                     "name": "ivan",
-                    "email": "%s"
+                    "email": "%s",
+                    "password": "password"
                 }
                 """.formatted(tooLongEmail)))
                 .andExpect(status().isBadRequest())
@@ -123,7 +128,8 @@ class UserControllerTest {
                         .content("""
                 {
                     "name": "ivan",
-                    "email": "ivan@example.com"
+                    "email": "ivan@example.com",
+                    "password": "password"
                 }
                 """))
                 .andExpect(status().isConflict())
@@ -131,5 +137,60 @@ class UserControllerTest {
                         .value("User with email ivan@example.com already exists"));
 
         verify(userService).create(any(UserCreateRequest.class));
+    }
+
+    @Test
+    void create_shouldReturnBadRequest_whenPasswordIsBlank() throws Exception {
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                {
+                    "name": "ivan",
+                    "email": "ivan@example.com",
+                    "password": ""
+                }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(userService, never()).create(any(UserCreateRequest.class));
+    }
+
+    @Test
+    void create_shouldReturnBadRequest_whenPasswordIsTooShort() throws Exception {
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                {
+                    "name": "ivan",
+                    "email": "ivan@example.com",
+                    "password": "123"
+                }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(userService, never()).create(any(UserCreateRequest.class));
+    }
+
+    @Test
+    void create_shouldReturnBadRequest_whenPasswordIsTooLong() throws Exception {
+        String tooLongPassword = "a".repeat(73);
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                {
+                    "name": "ivan",
+                    "email": "ivan@example.com",
+                    "password": "%s"
+                }
+                """.formatted(tooLongPassword)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(userService, never()).create(any(UserCreateRequest.class));
     }
 }

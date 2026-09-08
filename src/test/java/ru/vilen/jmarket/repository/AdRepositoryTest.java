@@ -40,6 +40,7 @@ class AdRepositoryTest {
         User author = new User();
         author.setName("Ivan");
         author.setEmail("ivan@example.com");
+        author.setPasswordHash("encoded-password");
 
         User savedAuthor = userRepository.save(author);
 
@@ -71,6 +72,7 @@ class AdRepositoryTest {
         User author = new User();
         author.setName("Ivan");
         author.setEmail("ivan@example.com");
+        author.setPasswordHash("encoded-password");
 
         User savedAuthor = userRepository.save(author);
 
@@ -120,11 +122,13 @@ class AdRepositoryTest {
         User author1 = new User();
         author1.setName("Ivan");
         author1.setEmail("ivan@example.com");
+        author1.setPasswordHash("encoded-password");
         User savedAuthor1 = userRepository.save(author1);
 
         User author2 = new User();
         author2.setName("Sergey");
         author2.setEmail("sergey@example.com");
+        author2.setPasswordHash("encoded-password");
         User savedAuthor2 = userRepository.save(author2);
 
         Ad ad1 = new Ad();
@@ -164,6 +168,7 @@ class AdRepositoryTest {
         User author = new User();
         author.setName("Ivan");
         author.setEmail("ivan@example.com");
+        author.setPasswordHash("encoded-password");
         userRepository.save(author);
 
         Ad ad1 = new Ad();

@@ -6,6 +6,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.vilen.jmarket.dto.UserCreateRequest;
 import ru.vilen.jmarket.dto.UserResponse;
 import ru.vilen.jmarket.entity.User;
@@ -26,12 +27,15 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @Test
     void create_shouldReturnUserResponse_whenEmailDoesNotExist() {
         UserCreateRequest request = new UserCreateRequest(
                 "ivan",
-                "ivan@example.com"
+                "ivan@example.com",
+                "password"
         );
 
         User savedUser = new User();
@@ -39,6 +43,8 @@ class UserServiceTest {
         savedUser.setName("ivan");
         savedUser.setEmail("ivan@example.com");
 
+        when(passwordEncoder.encode(request.password()))
+                .thenReturn("encoded-password");
         when(userRepository.existsByEmail(request.email()))
                 .thenReturn(false);
         when(userRepository.save(any(User.class)))
@@ -52,18 +58,21 @@ class UserServiceTest {
         verify(userRepository).existsByEmail(request.email());
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(passwordEncoder).encode(request.password());
         verify(userRepository).save(captor.capture());
 
         User actualUserToSave = captor.getValue();
         assertThat(actualUserToSave.getName()).isEqualTo(request.name());
         assertThat(actualUserToSave.getEmail()).isEqualTo(request.email());
+        assertThat(actualUserToSave.getPasswordHash()).isEqualTo("encoded-password");
     }
 
     @Test
     void create_shouldThrowEmailAlreadyExistsException_whenEmailAlreadyExists() {
         UserCreateRequest request = new UserCreateRequest(
                 "ivan",
-                "ivan@example.com"
+                "ivan@example.com",
+                "password"
         );
 
         when(userRepository.existsByEmail(request.email()))
@@ -75,5 +84,6 @@ class UserServiceTest {
 
         verify(userRepository).existsByEmail(request.email());
         verify(userRepository, never()).save(any(User.class));
+        verify(passwordEncoder, never()).encode(anyString());
     }
 }
