@@ -15,6 +15,7 @@ import ru.vilen.jmarket.service.AdService;
 import ru.vilen.jmarket.service.UserService;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,8 +46,7 @@ class SecurityConfigTest {
                         {
                           "title": "Phone",
                           "description": "Good phone",
-                          "price": 15000.00,
-                          "authorId": 1
+                          "price": 15000.00
                         }
                         """))
                 .andExpect(status().isUnauthorized());
@@ -84,12 +84,11 @@ class SecurityConfigTest {
                         {
                           "title": "Phone",
                           "description": "Good phone",
-                          "price": 15000.00,
-                          "authorId": 1
+                          "price": 15000.00
                         }
                         """))
                 .andExpect(status().isCreated());
 
-        verify(adService).create(any(AdCreateRequest.class));
+        verify(adService).create(any(AdCreateRequest.class), eq("ivan@example.com"));
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.dto.*;
@@ -29,6 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class AdControllerTest {
 
+    private static final String AUTHOR_EMAIL = "ivan@example.com";
+    private static final UsernamePasswordAuthenticationToken AUTHENTICATION =
+            UsernamePasswordAuthenticationToken.authenticated(AUTHOR_EMAIL, null, List.of());
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -45,17 +50,17 @@ class AdControllerTest {
                 1L
         );
 
-        when(adService.create(any(AdCreateRequest.class)))
+        when(adService.create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL)))
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/ads")
+                        .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
                           "title": "Phone",
                           "description": "Good phone",
-                          "price": 15000.00,
-                          "authorId": 1
+                          "price": 15000.00
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -68,26 +73,25 @@ class AdControllerTest {
         ArgumentCaptor<AdCreateRequest> requestCaptor =
                 ArgumentCaptor.forClass(AdCreateRequest.class);
 
-        verify(adService).create(requestCaptor.capture());
+        verify(adService).create(requestCaptor.capture(), eq(AUTHOR_EMAIL));
 
         AdCreateRequest actualRequest = requestCaptor.getValue();
 
         assertThat(actualRequest.title()).isEqualTo("Phone");
         assertThat(actualRequest.description()).isEqualTo("Good phone");
         assertThat(actualRequest.price()).isEqualByComparingTo("15000.00");
-        assertThat(actualRequest.authorId()).isEqualTo(1L);
     }
 
     @Test
     void create_shouldReturnBadRequest_whenTitleIsBlank() throws Exception {
         mockMvc.perform(post("/api/ads")
+                        .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
                               "title": "",
                               "description": "Good phone",
-                              "price": 15000.00,
-                              "authorId": 1
+                              "price": 15000.00
                             }
                             """))
                 .andExpect(status().isBadRequest())
@@ -96,30 +100,30 @@ class AdControllerTest {
                         .value("Validation failed for one or more arguments"));
 
         verify(adService, never())
-                .create(any(AdCreateRequest.class));
+                .create(any(AdCreateRequest.class), anyString());
     }
 
     @Test
     void create_shouldReturnNotFound_whenAuthorDoesNotExist() throws Exception {
-        when(adService.create(any(AdCreateRequest.class)))
-                .thenThrow(new UserNotFoundException(999L));
+        when(adService.create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL)))
+                .thenThrow(new UserNotFoundException(AUTHOR_EMAIL));
 
         mockMvc.perform(post("/api/ads")
+                        .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
                               "title": "Phone",
                               "description": "Good phone",
-                              "price": 15000.00,
-                              "authorId": 999
+                              "price": 15000.00
                             }
                             """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message")
-                        .value("User with ID 999 not found"));
+                        .value("User with email ivan@example.com not found"));
 
-        verify(adService).create(any(AdCreateRequest.class));
+        verify(adService).create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL));
     }
 
     @Test

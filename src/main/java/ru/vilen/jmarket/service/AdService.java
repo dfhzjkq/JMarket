@@ -26,9 +26,9 @@ public class AdService {
     private final UserRepository userRepository;
 
     @Transactional
-    public AdResponse create(AdCreateRequest request) {
-        User author = userRepository.findById(request.authorId())
-                .orElseThrow(() -> new UserNotFoundException(request.authorId()));
+    public AdResponse create(AdCreateRequest request, String authorEmail) {
+        User author = userRepository.findByEmail(authorEmail)
+                .orElseThrow(() -> new UserNotFoundException(authorEmail));
 
         Ad ad = toEntity(request, author);
         Ad savedAd = adRepository.save(ad);

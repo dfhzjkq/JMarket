@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.service.AdService;
@@ -19,8 +20,9 @@ public class AdController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AdResponse create(@Valid @RequestBody AdCreateRequest request) {
-        return adService.create(request);
+    public AdResponse create(@Valid @RequestBody AdCreateRequest request, Authentication authentication) {
+        String authorEmail = authentication.getName();
+        return adService.create(request, authorEmail);
     }
 
     @GetMapping

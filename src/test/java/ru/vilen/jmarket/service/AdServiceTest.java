@@ -42,16 +42,17 @@ class AdServiceTest {
 
     @Test
     void create_shouldReturnAdResponse_whenAuthorExists() {
+        String authorEmail = "ivan@example.com";
+
         User author = new User();
         author.setId(1L);
         author.setName("Ivan");
-        author.setEmail("ivan@example.com");
+        author.setEmail(authorEmail);
 
         AdCreateRequest request = new AdCreateRequest(
                 "Phone",
                 "Good phone",
-                new BigDecimal("15000.00"),
-                1L
+                new BigDecimal("15000.00")
         );
 
         Ad savedAd = new Ad();
@@ -61,18 +62,18 @@ class AdServiceTest {
         savedAd.setPrice(new BigDecimal("15000.00"));
         savedAd.setAuthor(author);
 
-        when(userRepository.findById(request.authorId()))
+        when(userRepository.findByEmail(authorEmail))
                 .thenReturn(Optional.of(author));
         when(adRepository.save(any(Ad.class)))
                 .thenReturn(savedAd);
 
-        AdResponse actual = adService.create(request);
+        AdResponse actual = adService.create(request, authorEmail);
         assertThat(actual.id()).isEqualTo(10L);
         assertThat(actual.title()).isEqualTo("Phone");
         assertThat(actual.description()).isEqualTo("Good phone");
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
-        verify(userRepository).findById(request.authorId());
+        verify(userRepository).findByEmail(authorEmail);
 
         ArgumentCaptor<Ad> adCaptor = ArgumentCaptor.forClass(Ad.class);
         verify(adRepository).save(adCaptor.capture());
@@ -87,21 +88,22 @@ class AdServiceTest {
 
     @Test
     void create_shouldThrowUserNotFoundException_whenAuthorDoesNotExist() {
+        String authorEmail = "missing@example.com";
+
         AdCreateRequest request = new AdCreateRequest(
                 "Phone",
                 "Good phone",
-                new BigDecimal("15000.00"),
-                999L
+                new BigDecimal("15000.00")
         );
 
-        when(userRepository.findById(request.authorId()))
+        when(userRepository.findByEmail(authorEmail))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> adService.create(request))
+        assertThatThrownBy(() -> adService.create(request, authorEmail))
                 .isInstanceOf(UserNotFoundException.class)
-                .hasMessage("User with ID 999 not found");
+                .hasMessage("User with email missing@example.com not found");
 
-        verify(userRepository).findById(request.authorId());
+        verify(userRepository).findByEmail(authorEmail);
         verify(adRepository, never()).save(any(Ad.class));
     }
 
