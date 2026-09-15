@@ -14,6 +14,7 @@ import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
+import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.repository.AdRepository;
@@ -244,10 +245,12 @@ class AdServiceTest {
 
     @Test
     void update_shouldReturnUpdatedAdResponse_whenAdExists() {
+        String authorEmail = "ivan@example.com";
+
         User author = new User();
         author.setId(1L);
         author.setName("Ivan");
-        author.setEmail("ivan@example.com");
+        author.setEmail(authorEmail);
 
         Ad ad = new Ad();
         ad.setId(10L);
@@ -263,7 +266,7 @@ class AdServiceTest {
                 "New Phone",
                 "New phone description",
                 new BigDecimal("15000.00")
-        ));
+        ), authorEmail);
         assertThat(actual.id()).isEqualTo(10L);
         assertThat(actual.title()).isEqualTo("New Phone");
         assertThat(actual.description()).isEqualTo("New phone description");
@@ -286,7 +289,7 @@ class AdServiceTest {
                 "New Phone",
                 "New phone description",
                 new BigDecimal("15000.00")
-        )))
+        ), "ivan@example.com"))
                 .isInstanceOf(AdNotFoundException.class)
                 .hasMessage("Ad with ID 999 not found");
 
@@ -294,7 +297,79 @@ class AdServiceTest {
     }
 
     @Test
+    void update_shouldThrowAdAccessDeniedException_whenUserIsNotAuthor() {
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail("ivan@example.com");
+
+        Ad ad = new Ad();
+        ad.setId(10L);
+        ad.setTitle("Old Phone");
+        ad.setDescription("Old phone description");
+        ad.setPrice(new BigDecimal("10000.00"));
+        ad.setAuthor(author);
+
+        AdUpdateRequest request = new AdUpdateRequest(
+                "New Phone",
+                "New phone description",
+                new BigDecimal("15000.00")
+        );
+
+        when(adRepository.findById(10L))
+                .thenReturn(Optional.of(ad));
+
+        assertThatThrownBy(() -> adService.update(10L, request, "petr@example.com"))
+                .isInstanceOf(AdAccessDeniedException.class)
+                .hasMessage("You do not have permission to manage ad with ID 10");
+
+        assertThat(ad.getTitle()).isEqualTo("Old Phone");
+        assertThat(ad.getDescription()).isEqualTo("Old phone description");
+        assertThat(ad.getPrice()).isEqualByComparingTo("10000.00");
+
+        verify(adRepository).findById(10L);
+    }
+
+    @Test
     void delete_shouldDeleteAd_whenAdExists() {
+        String authorEmail = "ivan@example.com";
+
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail(authorEmail);
+
+        Ad ad = new Ad();
+        ad.setId(10L);
+        ad.setTitle("Phone");
+        ad.setDescription("Good phone");
+        ad.setPrice(new BigDecimal("15000.00"));
+        ad.setAuthor(author);
+
+        when(adRepository.findById(10L))
+                .thenReturn(Optional.of(ad));
+
+        adService.delete(10L, authorEmail);
+
+        verify(adRepository).findById(10L);
+        verify(adRepository).delete(ad);
+    }
+
+    @Test
+    void delete_shouldThrowAdNotFoundException_whenAdDoesNotExist() {
+        when(adRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adService.delete(999L, "ivan@example.com"))
+                .isInstanceOf(AdNotFoundException.class)
+                .hasMessage("Ad with ID 999 not found");
+
+        verify(adRepository).findById(999L);
+        verify(adRepository, never()).delete(any(Ad.class));
+    }
+
+    @Test
+    void delete_shouldThrowAdAccessDeniedException_whenUserIsNotAuthor() {
         User author = new User();
         author.setId(1L);
         author.setName("Ivan");
@@ -310,22 +385,11 @@ class AdServiceTest {
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
 
-        adService.delete(10L);
+        assertThatThrownBy(() -> adService.delete(10L, "petr@example.com"))
+                .isInstanceOf(AdAccessDeniedException.class)
+                .hasMessage("You do not have permission to manage ad with ID 10");
 
         verify(adRepository).findById(10L);
-        verify(adRepository).delete(ad);
-    }
-
-    @Test
-    void delete_shouldThrowAdNotFoundException_whenAdDoesNotExist() {
-        when(adRepository.findById(999L))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> adService.delete(999L))
-                .isInstanceOf(AdNotFoundException.class)
-                .hasMessage("Ad with ID 999 not found");
-
-        verify(adRepository).findById(999L);
         verify(adRepository, never()).delete(any(Ad.class));
     }
 }

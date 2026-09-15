@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.dto.*;
+import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.service.AdService;
@@ -478,10 +479,11 @@ class AdControllerTest {
                 1L
         );
 
-        when(adService.update(eq(1L), any(AdUpdateRequest.class)))
+        when(adService.update(eq(1L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL)))
                 .thenReturn(response);
 
         mockMvc.perform(put("/api/ads/1")
+                        .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -501,7 +503,7 @@ class AdControllerTest {
                 ArgumentCaptor.forClass(AdUpdateRequest.class);
 
         verify(adService)
-                .update(eq(1L), requestCaptor.capture());
+                .update(eq(1L), requestCaptor.capture(), eq(AUTHOR_EMAIL));
 
         AdUpdateRequest actualRequest = requestCaptor.getValue();
 
@@ -512,12 +514,13 @@ class AdControllerTest {
 
     @Test
     void update_shouldReturnNotFound_whenAdDoesNotExist() throws Exception {
-        when(adService.update(eq(999L), any(AdUpdateRequest.class)))
+        when(adService.update(eq(999L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL)))
                 .thenThrow(new AdNotFoundException(999L));
 
         mockMvc.perform(put("/api/ads/999")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                         {
                           "title": "Updated Phone",
                           "description": "Updated description",
@@ -530,14 +533,15 @@ class AdControllerTest {
                         .value("Ad with ID 999 not found"));
 
         verify(adService)
-                .update(eq(999L), any(AdUpdateRequest.class));
+                .update(eq(999L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL));
     }
 
     @Test
     void update_shouldReturnBadRequest_whenTitleIsBlank() throws Exception {
         mockMvc.perform(put("/api/ads/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                         {
                           "title": "",
                           "description": "Updated description",
@@ -550,28 +554,72 @@ class AdControllerTest {
                         .value("Validation failed for one or more arguments"));
 
         verify(adService, never())
-                .update(eq(1L), any(AdUpdateRequest.class));
+                .update(eq(1L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL));
+    }
+
+    @Test
+    void update_shouldReturnForbidden_whenUserIsNotAuthor() throws Exception {
+        when(adService.update(eq(1L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL)))
+                .thenThrow(new AdAccessDeniedException(
+                        "You do not have permission to manage ad with ID 1"
+                ));
+
+        mockMvc.perform(put("/api/ads/1")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Updated Phone",
+                          "description": "Updated description",
+                          "price": 20000.00
+                        }
+                        """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message")
+                        .value("You do not have permission to manage ad with ID 1"));
+
+        verify(adService)
+                .update(eq(1L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL));
     }
 
     @Test
     void delete_shouldReturnNoContent_whenAdExists() throws Exception {
-        mockMvc.perform(delete("/api/ads/1"))
+        mockMvc.perform(delete("/api/ads/1")
+                        .principal(AUTHENTICATION))
                 .andExpect(status().isNoContent());
 
-        verify(adService).delete(1L);
+        verify(adService).delete(1L, AUTHOR_EMAIL);
     }
 
     @Test
     void delete_shouldReturnNotFound_whenAdDoesNotExist() throws Exception {
         doThrow(new AdNotFoundException(999L))
-                .when(adService).delete(999L);
+                .when(adService).delete(999L, AUTHOR_EMAIL);
 
-        mockMvc.perform(delete("/api/ads/999"))
+        mockMvc.perform(delete("/api/ads/999")
+                        .principal(AUTHENTICATION))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message")
                         .value("Ad with ID 999 not found"));
 
-        verify(adService).delete(999L);
+        verify(adService).delete(999L, AUTHOR_EMAIL);
+    }
+
+    @Test
+    void delete_shouldReturnForbidden_whenUserIsNotAuthor() throws Exception {
+        doThrow(new AdAccessDeniedException(
+                "You do not have permission to manage ad with ID 1"
+        )).when(adService).delete(1L, AUTHOR_EMAIL);
+
+        mockMvc.perform(delete("/api/ads/1")
+                        .principal(AUTHENTICATION))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message")
+                        .value("You do not have permission to manage ad with ID 1"));
+
+        verify(adService).delete(1L, AUTHOR_EMAIL);
     }
 }

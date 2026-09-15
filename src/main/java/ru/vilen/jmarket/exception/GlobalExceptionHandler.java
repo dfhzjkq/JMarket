@@ -55,4 +55,16 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(errorResponse);
     }
+
+    @ExceptionHandler(AdAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAdAccessDeniedException(
+            AdAccessDeniedException ex
+    ) {
+        ErrorResponse errorResponse =
+                new ErrorResponse(HttpStatus.FORBIDDEN.value(),  ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(errorResponse);
+    }
 }

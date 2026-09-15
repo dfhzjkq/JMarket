@@ -20,7 +20,10 @@ public class AdController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AdResponse create(@Valid @RequestBody AdCreateRequest request, Authentication authentication) {
+    public AdResponse create(
+            @Valid @RequestBody AdCreateRequest request,
+            Authentication authentication
+    ) {
         String authorEmail = authentication.getName();
         return adService.create(request, authorEmail);
     }
@@ -44,13 +47,22 @@ public class AdController {
     }
 
     @PutMapping("/{id}")
-    public AdResponse update(@PathVariable Long id, @Valid @RequestBody AdUpdateRequest request) {
-        return adService.update(id, request);
+    public AdResponse update(
+            @PathVariable Long id,
+            @Valid @RequestBody AdUpdateRequest request,
+            Authentication authentication
+    ) {
+        String authorEmail = authentication.getName();
+        return adService.update(id, request, authorEmail);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        adService.delete(id);
+    public void delete(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String authorEmail = authentication.getName();
+        adService.delete(id, authorEmail);
     }
 }

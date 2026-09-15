@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.User;
+import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.repository.AdRepository;
@@ -70,9 +71,15 @@ public class AdService {
     }
 
     @Transactional
-    public AdResponse update(Long id, AdUpdateRequest request) {
+    public AdResponse update(Long id, AdUpdateRequest request, String authorEmail) {
         Ad ad = adRepository.findById(id)
                 .orElseThrow(() -> new AdNotFoundException(id));
+
+        if (!ad.getAuthor().getEmail().equals(authorEmail)) {
+            throw new AdAccessDeniedException(
+                    "You do not have permission to manage ad with ID " + id
+            );
+        }
 
         ad.setTitle(request.title());
         ad.setDescription(request.description());
@@ -82,9 +89,16 @@ public class AdService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String authorEmail) {
         Ad ad = adRepository.findById(id)
                 .orElseThrow(() -> new AdNotFoundException(id));
+
+        if (!ad.getAuthor().getEmail().equals(authorEmail)) {
+            throw new AdAccessDeniedException(
+                    "You do not have permission to manage ad with ID " + id
+            );
+        }
+
         adRepository.delete(ad);
     }
 
