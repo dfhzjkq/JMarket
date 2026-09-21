@@ -342,6 +342,84 @@ class AdServiceTest {
     }
 
     @Test
+    void updateStatus_shouldReturnUpdatedAdResponse_whenUserIsAuthor() {
+        String authorEmail = "ivan@example.com";
+
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail(authorEmail);
+
+        Ad ad = new Ad();
+        ad.setId(10L);
+        ad.setTitle("Phone");
+        ad.setDescription("Good phone");
+        ad.setPrice(new BigDecimal("15000.00"));
+        ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
+
+        when(adRepository.findById(10L))
+                .thenReturn(Optional.of(ad));
+
+        AdStatusUpdateRequest request =
+                new AdStatusUpdateRequest(AdStatus.SOLD);
+
+        AdResponse actual = adService.updateStatus(10L, request, authorEmail);
+
+        assertThat(actual.id()).isEqualTo(10L);
+        assertThat(actual.status()).isEqualTo(AdStatus.SOLD);
+        assertThat(ad.getStatus()).isEqualTo(AdStatus.SOLD);
+
+        verify(adRepository).findById(10L);
+    }
+
+    @Test
+    void updateStatus_shouldThrowAdNotFoundException_whenAdDoesNotExist() {
+        when(adRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        AdStatusUpdateRequest request =
+                new AdStatusUpdateRequest(AdStatus.SOLD);
+
+        assertThatThrownBy(() ->
+                adService.updateStatus(999L, request, "ivan@example.com"))
+                .isInstanceOf(AdNotFoundException.class)
+                .hasMessage("Ad with ID 999 not found");
+
+        verify(adRepository).findById(999L);
+    }
+
+    @Test
+    void updateStatus_shouldThrowAdAccessDeniedException_whenUserIsNotAuthor() {
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail("ivan@example.com");
+
+        Ad ad = new Ad();
+        ad.setId(10L);
+        ad.setTitle("Phone");
+        ad.setDescription("Good phone");
+        ad.setPrice(new BigDecimal("15000.00"));
+        ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
+
+        when(adRepository.findById(10L))
+                .thenReturn(Optional.of(ad));
+
+        AdStatusUpdateRequest request =
+                new AdStatusUpdateRequest(AdStatus.SOLD);
+
+        assertThatThrownBy(() ->
+                adService.updateStatus(10L, request, "petr@example.com"))
+                .isInstanceOf(AdAccessDeniedException.class)
+                .hasMessage("You do not have permission to manage ad with ID 10");
+
+        assertThat(ad.getStatus()).isEqualTo(AdStatus.ACTIVE);
+        verify(adRepository).findById(10L);
+    }
+
+    @Test
     void delete_shouldDeleteAd_whenAdExists() {
         String authorEmail = "ivan@example.com";
 

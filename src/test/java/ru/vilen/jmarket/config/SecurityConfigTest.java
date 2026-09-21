@@ -13,6 +13,7 @@ import ru.vilen.jmarket.controller.AdController;
 import ru.vilen.jmarket.controller.AuthController;
 import ru.vilen.jmarket.controller.UserController;
 import ru.vilen.jmarket.dto.AdCreateRequest;
+import ru.vilen.jmarket.dto.AdStatusUpdateRequest;
 import ru.vilen.jmarket.dto.LoginRequest;
 import ru.vilen.jmarket.dto.TokenResponse;
 import ru.vilen.jmarket.service.AdService;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -160,5 +162,38 @@ class SecurityConfigTest {
                 .andExpect(status().isNoContent());
 
         verify(adService).delete(1L, "ivan@example.com");
+    }
+
+    @Test
+    void updateAdStatus_shouldReturnUnauthorized_whenUserIsAnonymous() throws Exception {
+        mockMvc.perform(patch("/api/ads/1/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SOLD"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(adService);
+    }
+
+    @Test
+    void updateAdStatus_shouldReturnOk_whenUserIsAuthenticated() throws Exception {
+        mockMvc.perform(patch("/api/ads/1/status")
+                        .with(jwt().jwt(token -> token.subject("ivan@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SOLD"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(adService).updateStatus(
+                eq(1L),
+                any(AdStatusUpdateRequest.class),
+                eq("ivan@example.com")
+        );
     }
 }

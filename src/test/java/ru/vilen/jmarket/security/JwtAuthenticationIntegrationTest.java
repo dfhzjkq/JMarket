@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.TestcontainersConfiguration;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,7 +28,7 @@ class JwtAuthenticationIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    void registeredUser_shouldCreateAd_withIssuedAccessToken() throws Exception {
+    void registeredUser_shouldCreateAndUpdateAdStatus_withIssuedAccessToken() throws Exception {
         String registrationResponse = mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -60,7 +62,7 @@ class JwtAuthenticationIntegrationTest {
 
         String accessToken = JsonPath.read(loginResponse, "$.accessToken");
 
-        mockMvc.perform(post("/api/ads")
+        String createAdResponse = mockMvc.perform(post("/api/ads")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -73,7 +75,28 @@ class JwtAuthenticationIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Phone"))
                 .andExpect(jsonPath("$.authorId").value(authorId.longValue()))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Number adId = JsonPath.read(createAdResponse, "$.id");
+
+        mockMvc.perform(patch("/api/ads/{id}/status", adId.longValue())
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SOLD"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(adId.longValue()))
+                .andExpect(jsonPath("$.status").value("SOLD"));
+
+        mockMvc.perform(get("/api/ads/{id}", adId.longValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SOLD"));
     }
 
     @Test

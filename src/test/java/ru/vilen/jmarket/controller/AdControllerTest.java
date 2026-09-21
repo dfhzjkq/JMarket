@@ -593,6 +593,133 @@ class AdControllerTest {
     }
 
     @Test
+    void updateStatus_shouldReturnAdResponse_whenRequestIsValid() throws Exception {
+        AdResponse response = new AdResponse(
+                1L,
+                "Phone",
+                "Good phone",
+                new BigDecimal("15000.00"),
+                1L,
+                AdStatus.SOLD
+        );
+
+        when(adService.updateStatus(
+                eq(1L),
+                any(AdStatusUpdateRequest.class),
+                eq(AUTHOR_EMAIL)
+        )).thenReturn(response);
+
+        mockMvc.perform(patch("/api/ads/1/status")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SOLD"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.status").value("SOLD"));
+
+        ArgumentCaptor<AdStatusUpdateRequest> requestCaptor =
+                ArgumentCaptor.forClass(AdStatusUpdateRequest.class);
+
+        verify(adService).updateStatus(
+                eq(1L),
+                requestCaptor.capture(),
+                eq(AUTHOR_EMAIL)
+        );
+        assertThat(requestCaptor.getValue().status()).isEqualTo(AdStatus.SOLD);
+    }
+
+    @Test
+    void updateStatus_shouldReturnBadRequest_whenStatusIsMissing() throws Exception {
+        mockMvc.perform(patch("/api/ads/1/status")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verifyNoInteractions(adService);
+    }
+
+    @Test
+    void updateStatus_shouldReturnBadRequest_whenStatusIsUnknown() throws Exception {
+        mockMvc.perform(patch("/api/ads/1/status")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "PUBLISHED"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(adService);
+    }
+
+    @Test
+    void updateStatus_shouldReturnNotFound_whenAdDoesNotExist() throws Exception {
+        when(adService.updateStatus(
+                eq(999L),
+                any(AdStatusUpdateRequest.class),
+                eq(AUTHOR_EMAIL)
+        )).thenThrow(new AdNotFoundException(999L));
+
+        mockMvc.perform(patch("/api/ads/999/status")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SOLD"
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message")
+                        .value("Ad with ID 999 not found"));
+
+        verify(adService).updateStatus(
+                eq(999L),
+                any(AdStatusUpdateRequest.class),
+                eq(AUTHOR_EMAIL)
+        );
+    }
+
+    @Test
+    void updateStatus_shouldReturnForbidden_whenUserIsNotAuthor() throws Exception {
+        when(adService.updateStatus(
+                eq(1L),
+                any(AdStatusUpdateRequest.class),
+                eq(AUTHOR_EMAIL)
+        )).thenThrow(new AdAccessDeniedException(
+                "You do not have permission to manage ad with ID 1"
+        ));
+
+        mockMvc.perform(patch("/api/ads/1/status")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "SOLD"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message")
+                        .value("You do not have permission to manage ad with ID 1"));
+
+        verify(adService).updateStatus(
+                eq(1L),
+                any(AdStatusUpdateRequest.class),
+                eq(AUTHOR_EMAIL)
+        );
+    }
+
+    @Test
     void delete_shouldReturnNoContent_whenAdExists() throws Exception {
         mockMvc.perform(delete("/api/ads/1")
                         .principal(AUTHENTICATION))

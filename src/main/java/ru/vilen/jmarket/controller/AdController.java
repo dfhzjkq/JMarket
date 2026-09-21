@@ -65,4 +65,14 @@ public class AdController {
         String authorEmail = authentication.getName();
         adService.delete(id, authorEmail);
     }
+
+    @PatchMapping("/{id}/status")
+    public AdResponse updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody AdStatusUpdateRequest request,
+            Authentication authentication
+    ) {
+        String authorEmail = authentication.getName();
+        return adService.updateStatus(id, request, authorEmail);
+    }
 }

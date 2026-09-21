@@ -103,6 +103,21 @@ public class AdService {
         adRepository.delete(ad);
     }
 
+    @Transactional
+    public AdResponse updateStatus(Long adId, AdStatusUpdateRequest request, String authorEmail) {
+        Ad ad = adRepository.findById(adId)
+                .orElseThrow(() -> new AdNotFoundException(adId));
+
+        if (!ad.getAuthor().getEmail().equals(authorEmail)) {
+            throw new AdAccessDeniedException(
+                    "You do not have permission to manage ad with ID " + adId
+            );
+        }
+
+        ad.setStatus(request.status());
+        return toResponse(ad);
+    }
+
     private Ad toEntity(AdCreateRequest request, User author) {
         Ad ad = new Ad();
         ad.setTitle(request.title());
