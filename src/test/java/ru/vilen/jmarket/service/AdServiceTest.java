@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
+import ru.vilen.jmarket.entity.AdStatus;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -62,6 +63,7 @@ class AdServiceTest {
         savedAd.setDescription("Good phone");
         savedAd.setPrice(new BigDecimal("15000.00"));
         savedAd.setAuthor(author);
+        savedAd.setStatus(AdStatus.ACTIVE);
 
         when(userRepository.findByEmail(authorEmail))
                 .thenReturn(Optional.of(author));
@@ -74,6 +76,7 @@ class AdServiceTest {
         assertThat(actual.description()).isEqualTo("Good phone");
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
+        assertThat(actual.status()).isEqualTo(AdStatus.ACTIVE);
         verify(userRepository).findByEmail(authorEmail);
 
         ArgumentCaptor<Ad> adCaptor = ArgumentCaptor.forClass(Ad.class);
@@ -85,6 +88,7 @@ class AdServiceTest {
         assertThat(actualAdToSave.getPrice())
                 .isEqualByComparingTo(request.price());
         assertThat(actualAdToSave.getAuthor()).isSameAs(author);
+        assertThat(actualAdToSave.getStatus()).isEqualTo(AdStatus.ACTIVE);
     }
 
     @Test
@@ -121,6 +125,7 @@ class AdServiceTest {
         ad.setDescription("Good phone");
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
@@ -131,6 +136,7 @@ class AdServiceTest {
         assertThat(actual.description()).isEqualTo("Good phone");
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
+        assertThat(actual.status()).isEqualTo(AdStatus.ACTIVE);
 
         verify(adRepository).findById(10L);
     }
@@ -160,6 +166,7 @@ class AdServiceTest {
         ad.setDescription("Good phone");
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
 
         Pageable pageable = PageRequest.of(0, 20);
 
@@ -189,7 +196,8 @@ class AdServiceTest {
                 ad.getTitle(),
                 ad.getDescription(),
                 ad.getPrice(),
-                ad.getAuthor().getId()
+                ad.getAuthor().getId(),
+                ad.getStatus()
         );
 
         assertThat(actual.content()).isEqualTo(List.of(response));
@@ -258,6 +266,7 @@ class AdServiceTest {
         ad.setDescription("Old phone description");
         ad.setPrice(new BigDecimal("10000.00"));
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
@@ -272,6 +281,7 @@ class AdServiceTest {
         assertThat(actual.description()).isEqualTo("New phone description");
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
+        assertThat(actual.status()).isEqualTo(AdStatus.ACTIVE);
 
         assertThat(ad.getTitle()).isEqualTo("New Phone");
         assertThat(ad.getDescription()).isEqualTo("New phone description");
@@ -309,6 +319,7 @@ class AdServiceTest {
         ad.setDescription("Old phone description");
         ad.setPrice(new BigDecimal("10000.00"));
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
 
         AdUpdateRequest request = new AdUpdateRequest(
                 "New Phone",
@@ -345,6 +356,7 @@ class AdServiceTest {
         ad.setDescription("Good phone");
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
@@ -381,6 +393,7 @@ class AdServiceTest {
         ad.setDescription("Good phone");
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));

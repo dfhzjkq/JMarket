@@ -72,7 +72,8 @@ class JwtAuthenticationIntegrationTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Phone"))
-                .andExpect(jsonPath("$.authorId").value(authorId.longValue()));
+                .andExpect(jsonPath("$.authorId").value(authorId.longValue()))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
     @Test

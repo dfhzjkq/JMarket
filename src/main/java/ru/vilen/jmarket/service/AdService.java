@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
+import ru.vilen.jmarket.entity.AdStatus;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
@@ -108,10 +109,18 @@ public class AdService {
         ad.setDescription(request.description());
         ad.setPrice(request.price());
         ad.setAuthor(author);
+        ad.setStatus(AdStatus.ACTIVE);
         return ad;
     }
 
     private AdResponse toResponse(Ad ad) {
-        return new AdResponse(ad.getId(), ad.getTitle(), ad.getDescription(), ad.getPrice(), ad.getAuthor().getId());
+        return new AdResponse(
+                ad.getId(),
+                ad.getTitle(),
+                ad.getDescription(),
+                ad.getPrice(),
+                ad.getAuthor().getId(),
+                ad.getStatus()
+        );
     }
 }

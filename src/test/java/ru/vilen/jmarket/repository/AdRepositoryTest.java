@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.TestcontainersConfiguration;
 import ru.vilen.jmarket.entity.Ad;
+import ru.vilen.jmarket.entity.AdStatus;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.specification.AdSpecifications;
 
@@ -49,6 +50,7 @@ class AdRepositoryTest {
         ad.setDescription("Good phone");
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(savedAuthor);
+        ad.setStatus(AdStatus.ACTIVE);
 
         Ad savedAd = adRepository.save(ad);
 
@@ -62,6 +64,7 @@ class AdRepositoryTest {
         assertThat(foundAd.getTitle()).isEqualTo("Phone");
         assertThat(foundAd.getDescription()).isEqualTo("Good phone");
         assertThat(foundAd.getPrice()).isEqualByComparingTo("15000.00");
+        assertThat(foundAd.getStatus()).isEqualTo(AdStatus.ACTIVE);
 
         assertThat(foundAd.getAuthor().getId()).isEqualTo(savedAuthor.getId());
         assertThat(foundAd.getAuthor().getEmail()).isEqualTo("ivan@example.com");
@@ -81,6 +84,7 @@ class AdRepositoryTest {
         ad1.setDescription("New PS5");
         ad1.setPrice(new BigDecimal("50000.00"));
         ad1.setAuthor(savedAuthor);
+        ad1.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad1);
 
         Ad ad2 = new Ad();
@@ -88,6 +92,7 @@ class AdRepositoryTest {
         ad2.setDescription("New PS5 Slim");
         ad2.setPrice(new BigDecimal("55000.00"));
         ad2.setAuthor(savedAuthor);
+        ad2.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad2);
 
         Ad ad3 = new Ad();
@@ -95,6 +100,7 @@ class AdRepositoryTest {
         ad3.setDescription("New PS5 Pro");
         ad3.setPrice(new BigDecimal("62000.00"));
         ad3.setAuthor(savedAuthor);
+        ad3.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad3);
 
         entityManager.flush();
@@ -136,6 +142,7 @@ class AdRepositoryTest {
         ad1.setDescription("New PS5");
         ad1.setPrice(new BigDecimal("50000.00"));
         ad1.setAuthor(savedAuthor1);
+        ad1.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad1);
 
         Ad ad2 = new Ad();
@@ -143,6 +150,7 @@ class AdRepositoryTest {
         ad2.setDescription("New PS5 Slim");
         ad2.setPrice(new BigDecimal("55000.00"));
         ad2.setAuthor(savedAuthor2);
+        ad2.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad2);
 
         entityManager.flush();
@@ -176,6 +184,7 @@ class AdRepositoryTest {
         ad1.setDescription("New");
         ad1.setPrice(new BigDecimal("50000.00"));
         ad1.setAuthor(author);
+        ad1.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad1);
 
         Ad ad2 = new Ad();
@@ -183,6 +192,7 @@ class AdRepositoryTest {
         ad2.setDescription("Case for PHONE");
         ad2.setPrice(new BigDecimal("3000.00"));
         ad2.setAuthor(author);
+        ad2.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad2);
 
         Ad ad3 = new Ad();
@@ -190,6 +200,7 @@ class AdRepositoryTest {
         ad3.setDescription("Gaming computer");
         ad3.setPrice(new BigDecimal("120000.00"));
         ad3.setAuthor(author);
+        ad3.setStatus(AdStatus.ACTIVE);
         adRepository.save(ad3);
 
         entityManager.flush();

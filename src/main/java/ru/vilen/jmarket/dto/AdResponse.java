@@ -1,5 +1,7 @@
 package ru.vilen.jmarket.dto;
 
+import ru.vilen.jmarket.entity.AdStatus;
+
 import java.math.BigDecimal;
 
 public record AdResponse(
@@ -7,6 +9,7 @@ public record AdResponse(
         String title,
         String description,
         BigDecimal price,
-        Long authorId
+        Long authorId,
+        AdStatus status
 ) {
 }

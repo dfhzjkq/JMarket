@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.dto.*;
+import ru.vilen.jmarket.entity.AdStatus;
 import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
@@ -48,7 +49,8 @@ class AdControllerTest {
                 "Phone",
                 "Good phone",
                 new BigDecimal("15000.00"),
-                1L
+                1L,
+                AdStatus.ACTIVE
         );
 
         when(adService.create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL)))
@@ -69,7 +71,8 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.title").value("Phone"))
                 .andExpect(jsonPath("$.description").value("Good phone"))
                 .andExpect(jsonPath("$.price").value(15000.00))
-                .andExpect(jsonPath("$.authorId").value(1));
+                .andExpect(jsonPath("$.authorId").value(1))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         ArgumentCaptor<AdCreateRequest> requestCaptor =
                 ArgumentCaptor.forClass(AdCreateRequest.class);
@@ -134,7 +137,8 @@ class AdControllerTest {
                 "Phone",
                 "Good phone",
                 new BigDecimal("15000.00"),
-                1L
+                1L,
+                AdStatus.ACTIVE
         );
 
         when(adService.findById(1L))
@@ -147,7 +151,8 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.title").value("Phone"))
                 .andExpect(jsonPath("$.description").value("Good phone"))
                 .andExpect(jsonPath("$.price").value(15000.00))
-                .andExpect(jsonPath("$.authorId").value(1));
+                .andExpect(jsonPath("$.authorId").value(1))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         verify(adService).findById(1L);
     }
@@ -176,7 +181,8 @@ class AdControllerTest {
                                 "Phone",
                                 "Good phone",
                                 new BigDecimal("15000.00"),
-                                1L
+                                1L,
+                                AdStatus.ACTIVE
                         )
                 ),
                 0,
@@ -203,6 +209,7 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.content[0].description").value("Good phone"))
                 .andExpect(jsonPath("$.content[0].price").value(15000.00))
                 .andExpect(jsonPath("$.content[0].authorId").value(1))
+                .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -476,7 +483,8 @@ class AdControllerTest {
                 "Updated Phone",
                 "Updated description",
                 new BigDecimal("20000.00"),
-                1L
+                1L,
+                AdStatus.ACTIVE
         );
 
         when(adService.update(eq(1L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL)))
@@ -497,7 +505,8 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.title").value("Updated Phone"))
                 .andExpect(jsonPath("$.description").value("Updated description"))
                 .andExpect(jsonPath("$.price").value(20000.00))
-                .andExpect(jsonPath("$.authorId").value(1));
+                .andExpect(jsonPath("$.authorId").value(1))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         ArgumentCaptor<AdUpdateRequest> requestCaptor =
                 ArgumentCaptor.forClass(AdUpdateRequest.class);

@@ -1,0 +1,13 @@
+ALTER TABLE ads
+ADD COLUMN status VARCHAR(10);
+
+UPDATE ads
+SET status = 'ACTIVE'
+WHERE status IS NULL;
+
+ALTER TABLE ads
+ALTER COLUMN status SET NOT NULL;
+
+ALTER TABLE ads
+ADD CONSTRAINT chk_ads_status
+CHECK (status IN ('ACTIVE', 'SOLD', 'ARCHIVED'));
