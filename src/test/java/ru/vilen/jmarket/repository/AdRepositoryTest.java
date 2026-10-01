@@ -38,21 +38,8 @@ class AdRepositoryTest {
 
     @Test
     void saveAndFindById_shouldReturnSavedAd() {
-        User author = new User();
-        author.setName("Ivan");
-        author.setEmail("ivan@example.com");
-        author.setPasswordHash("encoded-password");
-
-        User savedAuthor = userRepository.save(author);
-
-        Ad ad = new Ad();
-        ad.setTitle("Phone");
-        ad.setDescription("Good phone");
-        ad.setPrice(new BigDecimal("15000.00"));
-        ad.setAuthor(savedAuthor);
-        ad.setStatus(AdStatus.ACTIVE);
-
-        Ad savedAd = adRepository.save(ad);
+        User savedAuthor = saveUser("Ivan", "ivan@example.com");
+        Ad savedAd = saveAd("Phone", "Good phone", "15000.00", savedAuthor, AdStatus.ACTIVE);
 
         entityManager.flush();
         entityManager.clear();
@@ -72,36 +59,10 @@ class AdRepositoryTest {
 
     @Test
     void findAll_shouldReturnAdsWithinPriceRange_whenPriceSpecificationsAreApplied() {
-        User author = new User();
-        author.setName("Ivan");
-        author.setEmail("ivan@example.com");
-        author.setPasswordHash("encoded-password");
-
-        User savedAuthor = userRepository.save(author);
-
-        Ad ad1 = new Ad();
-        ad1.setTitle("PS5");
-        ad1.setDescription("New PS5");
-        ad1.setPrice(new BigDecimal("50000.00"));
-        ad1.setAuthor(savedAuthor);
-        ad1.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad1);
-
-        Ad ad2 = new Ad();
-        ad2.setTitle("PS5 Slim");
-        ad2.setDescription("New PS5 Slim");
-        ad2.setPrice(new BigDecimal("55000.00"));
-        ad2.setAuthor(savedAuthor);
-        ad2.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad2);
-
-        Ad ad3 = new Ad();
-        ad3.setTitle("PS5 Pro");
-        ad3.setDescription("New PS5 Pro");
-        ad3.setPrice(new BigDecimal("62000.00"));
-        ad3.setAuthor(savedAuthor);
-        ad3.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad3);
+        User author = saveUser("Ivan", "ivan@example.com");
+        saveAd("PS5", "New PS5", "50000.00", author, AdStatus.ACTIVE);
+        saveAd("PS5 Slim", "New PS5 Slim", "55000.00", author, AdStatus.ACTIVE);
+        saveAd("PS5 Pro", "New PS5 Pro", "62000.00", author, AdStatus.ACTIVE);
 
         entityManager.flush();
         entityManager.clear();
@@ -125,33 +86,10 @@ class AdRepositoryTest {
 
     @Test
     void findAll_shouldReturnOnlyAuthorsAds_whenAuthorIdSpecificationIsApplied() {
-        User author1 = new User();
-        author1.setName("Ivan");
-        author1.setEmail("ivan@example.com");
-        author1.setPasswordHash("encoded-password");
-        User savedAuthor1 = userRepository.save(author1);
-
-        User author2 = new User();
-        author2.setName("Sergey");
-        author2.setEmail("sergey@example.com");
-        author2.setPasswordHash("encoded-password");
-        User savedAuthor2 = userRepository.save(author2);
-
-        Ad ad1 = new Ad();
-        ad1.setTitle("PS5");
-        ad1.setDescription("New PS5");
-        ad1.setPrice(new BigDecimal("50000.00"));
-        ad1.setAuthor(savedAuthor1);
-        ad1.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad1);
-
-        Ad ad2 = new Ad();
-        ad2.setTitle("PS5 Slim");
-        ad2.setDescription("New PS5 Slim");
-        ad2.setPrice(new BigDecimal("55000.00"));
-        ad2.setAuthor(savedAuthor2);
-        ad2.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad2);
+        User savedAuthor1 = saveUser("Ivan", "ivan@example.com");
+        User savedAuthor2 = saveUser("Sergey", "sergey@example.com");
+        saveAd("PS5", "New PS5", "50000.00", savedAuthor1, AdStatus.ACTIVE);
+        saveAd("PS5 Slim", "New PS5 Slim", "55000.00", savedAuthor2, AdStatus.ACTIVE);
 
         entityManager.flush();
         entityManager.clear();
@@ -173,35 +111,10 @@ class AdRepositoryTest {
 
     @Test
     void findAll_shouldReturnAdsMatchingTitleOrDescription_whenQuerySpecificationIsApplied() {
-        User author = new User();
-        author.setName("Ivan");
-        author.setEmail("ivan@example.com");
-        author.setPasswordHash("encoded-password");
-        userRepository.save(author);
-
-        Ad ad1 = new Ad();
-        ad1.setTitle("Phone");
-        ad1.setDescription("New");
-        ad1.setPrice(new BigDecimal("50000.00"));
-        ad1.setAuthor(author);
-        ad1.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad1);
-
-        Ad ad2 = new Ad();
-        ad2.setTitle("Accessories");
-        ad2.setDescription("Case for PHONE");
-        ad2.setPrice(new BigDecimal("3000.00"));
-        ad2.setAuthor(author);
-        ad2.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad2);
-
-        Ad ad3 = new Ad();
-        ad3.setTitle("Laptop");
-        ad3.setDescription("Gaming computer");
-        ad3.setPrice(new BigDecimal("120000.00"));
-        ad3.setAuthor(author);
-        ad3.setStatus(AdStatus.ACTIVE);
-        adRepository.save(ad3);
+        User author = saveUser("Ivan", "ivan@example.com");
+        saveAd("Phone", "New", "50000.00", author, AdStatus.ACTIVE);
+        saveAd("Accessories", "Case for PHONE", "3000.00", author, AdStatus.ACTIVE);
+        saveAd("Laptop", "Gaming computer", "120000.00", author, AdStatus.ACTIVE);
 
         entityManager.flush();
         entityManager.clear();
@@ -217,5 +130,53 @@ class AdRepositoryTest {
         assertThat(adPage.getContent())
                 .extracting(Ad::getTitle)
                 .containsExactlyInAnyOrder("Phone", "Accessories");
+    }
+
+    @Test
+    void findAll_shouldReturnOnlySoldAds_whenStatusSpecificationIsApplied() {
+        User author = saveUser("Ivan", "ivan@example.com");
+        saveAd("Phone", "New", "50000.00", author, AdStatus.ACTIVE);
+        saveAd("Accessories", "Case for PHONE", "3000.00", author, AdStatus.SOLD);
+        saveAd("Laptop", "Gaming computer", "120000.00", author, AdStatus.ARCHIVED);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Specification<Ad> specification =
+                AdSpecifications.hasStatus(AdStatus.SOLD);
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<Ad> adPage = adRepository.findAll(specification, pageable);
+
+        assertThat(adPage.getContent())
+                .singleElement()
+                .satisfies(ad -> assertThat(ad.getStatus()).isEqualTo(AdStatus.SOLD));
+    }
+
+    private User saveUser(String name, String email) {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPasswordHash("encoded-password");
+
+        return userRepository.save(user);
+    }
+
+    private Ad saveAd(
+            String title,
+            String description,
+            String price,
+            User author,
+            AdStatus status
+    ) {
+        Ad ad = new Ad();
+        ad.setTitle(title);
+        ad.setDescription(description);
+        ad.setPrice(new BigDecimal(price));
+        ad.setAuthor(author);
+        ad.setStatus(status);
+
+        return adRepository.save(ad);
     }
 }

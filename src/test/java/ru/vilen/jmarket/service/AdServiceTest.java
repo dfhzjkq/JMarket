@@ -181,6 +181,7 @@ class AdServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -225,6 +226,7 @@ class AdServiceTest {
         );
 
         AdFilter adFilter = new AdFilter(
+                null,
                 null,
                 null,
                 null,

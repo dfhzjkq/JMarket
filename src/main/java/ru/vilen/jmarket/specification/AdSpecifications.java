@@ -2,6 +2,7 @@ package ru.vilen.jmarket.specification;
 
 import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.entity.Ad;
+import ru.vilen.jmarket.entity.AdStatus;
 
 import java.math.BigDecimal;
 import java.util.Locale;
@@ -62,5 +63,14 @@ public final class AdSpecifications {
                                 pattern
                         )
                 );
+    }
+
+    public static Specification<Ad> hasStatus(AdStatus status) {
+        if (status == null) {
+            return Specification.unrestricted();
+        }
+
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("status"), status);
     }
 }

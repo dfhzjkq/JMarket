@@ -60,12 +60,12 @@ class AdControllerTest {
                         .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                          "title": "Phone",
-                          "description": "Good phone",
-                          "price": 15000.00
-                        }
-                        """))
+                                {
+                                  "title": "Phone",
+                                  "description": "Good phone",
+                                  "price": 15000.00
+                                }
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.title").value("Phone"))
@@ -92,12 +92,12 @@ class AdControllerTest {
                         .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                              "title": "",
-                              "description": "Good phone",
-                              "price": 15000.00
-                            }
-                            """))
+                                {
+                                  "title": "",
+                                  "description": "Good phone",
+                                  "price": 15000.00
+                                }
+                                """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message")
@@ -116,12 +116,12 @@ class AdControllerTest {
                         .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                              "title": "Phone",
-                              "description": "Good phone",
-                              "price": 15000.00
-                            }
-                            """))
+                                {
+                                  "title": "Phone",
+                                  "description": "Good phone",
+                                  "price": 15000.00
+                                }
+                                """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message")
@@ -377,12 +377,12 @@ class AdControllerTest {
     @Test
     void findAll_shouldReturnBadRequest_whenMinPriceIsNegative() throws Exception {
         mockMvc.perform(get("/api/ads")
-                .param("minPrice", "-1000.00")
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.status").value(400))
-            .andExpect(jsonPath("$.message")
-                    .value("Validation failed for one or more arguments"));
+                        .param("minPrice", "-1000.00")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
 
         verify(adService, never()).findAll(
                 any(Pageable.class),
@@ -477,6 +477,22 @@ class AdControllerTest {
     }
 
     @Test
+    void findAll_shouldReturnBadRequest_whenStatusIsUnknown() throws Exception {
+        mockMvc.perform(get("/api/ads")
+                        .param("status", "abc")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(adService, never()).findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        );
+    }
+
+    @Test
     void update_shouldReturnAdResponse_whenRequestIsValid() throws Exception {
         AdResponse response = new AdResponse(
                 1L,
@@ -530,12 +546,12 @@ class AdControllerTest {
                         .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                          "title": "Updated Phone",
-                          "description": "Updated description",
-                          "price": 20000.00
-                        }
-                        """))
+                                {
+                                  "title": "Updated Phone",
+                                  "description": "Updated description",
+                                  "price": 20000.00
+                                }
+                                """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message")
@@ -551,12 +567,12 @@ class AdControllerTest {
                         .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                          "title": "",
-                          "description": "Updated description",
-                          "price": 20000.00
-                        }
-                        """))
+                                {
+                                  "title": "",
+                                  "description": "Updated description",
+                                  "price": 20000.00
+                                }
+                                """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message")
@@ -577,12 +593,12 @@ class AdControllerTest {
                         .principal(AUTHENTICATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                          "title": "Updated Phone",
-                          "description": "Updated description",
-                          "price": 20000.00
-                        }
-                        """))
+                                {
+                                  "title": "Updated Phone",
+                                  "description": "Updated description",
+                                  "price": 20000.00
+                                }
+                                """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.message")

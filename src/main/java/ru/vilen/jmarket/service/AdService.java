@@ -39,11 +39,14 @@ public class AdService {
 
     @Transactional(readOnly = true)
     public AdPageResponse findAll(Pageable pageable, AdFilter adFilter) {
+        AdStatus statusToFilter = adFilter.status() == null ? AdStatus.ACTIVE : adFilter.status();
+
         Specification<Ad> specification = Specification.allOf(
                 AdSpecifications.hasQuery(adFilter.query()),
                 AdSpecifications.hasMinPrice(adFilter.minPrice()),
                 AdSpecifications.hasMaxPrice(adFilter.maxPrice()),
-                AdSpecifications.hasAuthorId(adFilter.authorId())
+                AdSpecifications.hasAuthorId(adFilter.authorId()),
+                AdSpecifications.hasStatus(statusToFilter)
         );
 
         Page<Ad> adPage = adRepository.findAll(specification, pageable);
