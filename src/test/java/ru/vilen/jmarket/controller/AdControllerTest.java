@@ -15,6 +15,7 @@ import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.AdStatus;
 import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
+import ru.vilen.jmarket.exception.CategoryNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.service.AdService;
 
@@ -50,7 +51,8 @@ class AdControllerTest {
                 "Good phone",
                 new BigDecimal("15000.00"),
                 1L,
-                AdStatus.ACTIVE
+                AdStatus.ACTIVE,
+                1L
         );
 
         when(adService.create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL)))
@@ -63,7 +65,8 @@ class AdControllerTest {
                                 {
                                   "title": "Phone",
                                   "description": "Good phone",
-                                  "price": 15000.00
+                                  "price": 15000.00,
+                                  "categoryId": 1
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -72,7 +75,8 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.description").value("Good phone"))
                 .andExpect(jsonPath("$.price").value(15000.00))
                 .andExpect(jsonPath("$.authorId").value(1))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.categoryId").value(1));
 
         ArgumentCaptor<AdCreateRequest> requestCaptor =
                 ArgumentCaptor.forClass(AdCreateRequest.class);
@@ -84,6 +88,7 @@ class AdControllerTest {
         assertThat(actualRequest.title()).isEqualTo("Phone");
         assertThat(actualRequest.description()).isEqualTo("Good phone");
         assertThat(actualRequest.price()).isEqualByComparingTo("15000.00");
+        assertThat(actualRequest.categoryId()).isEqualTo(1L);
     }
 
     @Test
@@ -119,13 +124,38 @@ class AdControllerTest {
                                 {
                                   "title": "Phone",
                                   "description": "Good phone",
-                                  "price": 15000.00
+                                  "price": 15000.00,
+                                  "categoryId": 1
                                 }
                                 """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message")
                         .value("User with email ivan@example.com not found"));
+
+        verify(adService).create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL));
+    }
+
+    @Test
+    void create_shouldReturnNotFound_whenCategoryDoesNotExist() throws Exception {
+        when(adService.create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL)))
+                .thenThrow(new CategoryNotFoundException(999L));
+
+        mockMvc.perform(post("/api/ads")
+                        .principal(AUTHENTICATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Phone",
+                                  "description": "Good phone",
+                                  "price": 15000.00,
+                                  "categoryId": 999
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message")
+                        .value("Category with ID 999 not found"));
 
         verify(adService).create(any(AdCreateRequest.class), eq(AUTHOR_EMAIL));
     }
@@ -138,7 +168,8 @@ class AdControllerTest {
                 "Good phone",
                 new BigDecimal("15000.00"),
                 1L,
-                AdStatus.ACTIVE
+                AdStatus.ACTIVE,
+                1L
         );
 
         when(adService.findById(1L))
@@ -152,7 +183,8 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.description").value("Good phone"))
                 .andExpect(jsonPath("$.price").value(15000.00))
                 .andExpect(jsonPath("$.authorId").value(1))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.categoryId").value(1));
 
         verify(adService).findById(1L);
     }
@@ -182,7 +214,8 @@ class AdControllerTest {
                                 "Good phone",
                                 new BigDecimal("15000.00"),
                                 1L,
-                                AdStatus.ACTIVE
+                                AdStatus.ACTIVE,
+                                1L
                         )
                 ),
                 0,
@@ -210,6 +243,7 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.content[0].price").value(15000.00))
                 .andExpect(jsonPath("$.content[0].authorId").value(1))
                 .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
+                .andExpect(jsonPath("$.content[0].categoryId").value(1))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -500,7 +534,8 @@ class AdControllerTest {
                 "Updated description",
                 new BigDecimal("20000.00"),
                 1L,
-                AdStatus.ACTIVE
+                AdStatus.ACTIVE,
+                1L
         );
 
         when(adService.update(eq(1L), any(AdUpdateRequest.class), eq(AUTHOR_EMAIL)))
@@ -523,7 +558,6 @@ class AdControllerTest {
                 .andExpect(jsonPath("$.price").value(20000.00))
                 .andExpect(jsonPath("$.authorId").value(1))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
-
         ArgumentCaptor<AdUpdateRequest> requestCaptor =
                 ArgumentCaptor.forClass(AdUpdateRequest.class);
 
@@ -616,7 +650,8 @@ class AdControllerTest {
                 "Good phone",
                 new BigDecimal("15000.00"),
                 1L,
-                AdStatus.SOLD
+                AdStatus.SOLD,
+                1L
         );
 
         when(adService.updateStatus(

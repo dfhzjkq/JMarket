@@ -64,7 +64,8 @@ class SecurityConfigTest {
                         {
                           "title": "Phone",
                           "description": "Good phone",
-                          "price": 15000.00
+                          "price": 15000.00,
+                          "categoryId": 1
                         }
                         """))
                 .andExpect(status().isUnauthorized());
@@ -139,7 +140,8 @@ class SecurityConfigTest {
                         {
                           "title": "Phone",
                           "description": "Good phone",
-                          "price": 15000.00
+                          "price": 15000.00,
+                          "categoryId": 1
                         }
                         """))
                 .andExpect(status().isCreated());

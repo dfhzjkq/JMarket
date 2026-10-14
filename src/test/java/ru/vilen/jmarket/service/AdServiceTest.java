@@ -14,11 +14,14 @@ import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.AdStatus;
+import ru.vilen.jmarket.entity.Category;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
+import ru.vilen.jmarket.exception.CategoryNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.repository.AdRepository;
+import ru.vilen.jmarket.repository.CategoryRepository;
 import ru.vilen.jmarket.repository.UserRepository;
 
 import java.math.BigDecimal;
@@ -42,6 +45,9 @@ class AdServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CategoryRepository categoryRepository;
+
     @Test
     void create_shouldReturnAdResponse_whenAuthorExists() {
         String authorEmail = "ivan@example.com";
@@ -51,10 +57,15 @@ class AdServiceTest {
         author.setName("Ivan");
         author.setEmail(authorEmail);
 
+        Category category = new Category();
+        category.setId(1L);
+        category.setName("Электроника");
+
         AdCreateRequest request = new AdCreateRequest(
                 "Phone",
                 "Good phone",
-                new BigDecimal("15000.00")
+                new BigDecimal("15000.00"),
+                1L
         );
 
         Ad savedAd = new Ad();
@@ -64,9 +75,12 @@ class AdServiceTest {
         savedAd.setPrice(new BigDecimal("15000.00"));
         savedAd.setAuthor(author);
         savedAd.setStatus(AdStatus.ACTIVE);
+        savedAd.setCategory(category);
 
         when(userRepository.findByEmail(authorEmail))
                 .thenReturn(Optional.of(author));
+        when(categoryRepository.findById(1L))
+                .thenReturn(Optional.of(category));
         when(adRepository.save(any(Ad.class)))
                 .thenReturn(savedAd);
 
@@ -77,7 +91,9 @@ class AdServiceTest {
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
         assertThat(actual.status()).isEqualTo(AdStatus.ACTIVE);
+        assertThat(actual.categoryId()).isEqualTo(1L);
         verify(userRepository).findByEmail(authorEmail);
+        verify(categoryRepository).findById(1L);
 
         ArgumentCaptor<Ad> adCaptor = ArgumentCaptor.forClass(Ad.class);
         verify(adRepository).save(adCaptor.capture());
@@ -89,6 +105,7 @@ class AdServiceTest {
                 .isEqualByComparingTo(request.price());
         assertThat(actualAdToSave.getAuthor()).isSameAs(author);
         assertThat(actualAdToSave.getStatus()).isEqualTo(AdStatus.ACTIVE);
+        assertThat(actualAdToSave.getCategory()).isSameAs(category);
     }
 
     @Test
@@ -98,7 +115,8 @@ class AdServiceTest {
         AdCreateRequest request = new AdCreateRequest(
                 "Phone",
                 "Good phone",
-                new BigDecimal("15000.00")
+                new BigDecimal("15000.00"),
+                1L
         );
 
         when(userRepository.findByEmail(authorEmail))
@@ -109,6 +127,35 @@ class AdServiceTest {
                 .hasMessage("User with email missing@example.com not found");
 
         verify(userRepository).findByEmail(authorEmail);
+        verify(adRepository, never()).save(any(Ad.class));
+    }
+
+    @Test
+    void create_shouldThrowCategoryNotFoundException_whenCategoryDoesNotExist() {
+        String authorEmail = "ivan@example.com";
+
+        User author = new User();
+        author.setId(1L);
+        author.setName("Ivan");
+        author.setEmail(authorEmail);
+
+        AdCreateRequest request = new AdCreateRequest(
+                "Phone",
+                "Good phone",
+                new BigDecimal("15000.00"),
+                999L
+        );
+
+        when(userRepository.findByEmail(authorEmail))
+                .thenReturn(Optional.of(author));
+        when(categoryRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adService.create(request, authorEmail))
+                .isInstanceOf(CategoryNotFoundException.class)
+                .hasMessage("Category with ID 999 not found");
+
+        verify(categoryRepository).findById(999L);
         verify(adRepository, never()).save(any(Ad.class));
     }
 
@@ -126,6 +173,7 @@ class AdServiceTest {
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
         ad.setStatus(AdStatus.ACTIVE);
+        ad.setCategory(new Category(1L, "Электроника"));
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
@@ -137,6 +185,7 @@ class AdServiceTest {
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
         assertThat(actual.status()).isEqualTo(AdStatus.ACTIVE);
+        assertThat(actual.categoryId()).isEqualTo(1L);
 
         verify(adRepository).findById(10L);
     }
@@ -160,6 +209,10 @@ class AdServiceTest {
         author.setName("Ivan");
         author.setEmail("ivan@example.com");
 
+        Category category = new Category();
+        category.setId(1L);
+        category.setName("Электроника");
+
         Ad ad = new Ad();
         ad.setId(10L);
         ad.setTitle("Phone");
@@ -167,6 +220,7 @@ class AdServiceTest {
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
         ad.setStatus(AdStatus.ACTIVE);
+        ad.setCategory(category);
 
         Pageable pageable = PageRequest.of(0, 20);
 
@@ -198,7 +252,8 @@ class AdServiceTest {
                 ad.getDescription(),
                 ad.getPrice(),
                 ad.getAuthor().getId(),
-                ad.getStatus()
+                ad.getStatus(),
+                ad.getCategory().getId()
         );
 
         assertThat(actual.content()).isEqualTo(List.of(response));
@@ -269,6 +324,7 @@ class AdServiceTest {
         ad.setPrice(new BigDecimal("10000.00"));
         ad.setAuthor(author);
         ad.setStatus(AdStatus.ACTIVE);
+        ad.setCategory(new Category(1L, "Электроника"));
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
@@ -284,6 +340,7 @@ class AdServiceTest {
         assertThat(actual.price()).isEqualByComparingTo("15000.00");
         assertThat(actual.authorId()).isEqualTo(1L);
         assertThat(actual.status()).isEqualTo(AdStatus.ACTIVE);
+        assertThat(actual.categoryId()).isEqualTo(1L);
 
         assertThat(ad.getTitle()).isEqualTo("New Phone");
         assertThat(ad.getDescription()).isEqualTo("New phone description");
@@ -359,6 +416,7 @@ class AdServiceTest {
         ad.setPrice(new BigDecimal("15000.00"));
         ad.setAuthor(author);
         ad.setStatus(AdStatus.ACTIVE);
+        ad.setCategory(new Category(1L, "Электроника"));
 
         when(adRepository.findById(10L))
                 .thenReturn(Optional.of(ad));
@@ -370,6 +428,7 @@ class AdServiceTest {
 
         assertThat(actual.id()).isEqualTo(10L);
         assertThat(actual.status()).isEqualTo(AdStatus.SOLD);
+        assertThat(actual.categoryId()).isEqualTo(1L);
         assertThat(ad.getStatus()).isEqualTo(AdStatus.SOLD);
 
         verify(adRepository).findById(10L);

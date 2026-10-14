@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vilen.jmarket.TestcontainersConfiguration;
+import ru.vilen.jmarket.repository.CategoryRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -26,6 +27,9 @@ class JwtAuthenticationIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Test
     void registeredUser_shouldCreateAndUpdateAdStatus_withIssuedAccessToken() throws Exception {
@@ -62,6 +66,10 @@ class JwtAuthenticationIntegrationTest {
 
         String accessToken = JsonPath.read(loginResponse, "$.accessToken");
 
+        Long categoryId = categoryRepository.findByName("Электроника")
+                .orElseThrow()
+                .getId();
+
         String createAdResponse = mockMvc.perform(post("/api/ads")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -69,13 +77,15 @@ class JwtAuthenticationIntegrationTest {
                                 {
                                   "title": "Phone",
                                   "description": "Good phone",
-                                  "price": 15000.00
+                                  "price": 15000.00,
+                                  "categoryId": %d
                                 }
-                                """))
+                                """.formatted(categoryId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Phone"))
                 .andExpect(jsonPath("$.authorId").value(authorId.longValue()))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.categoryId").value(categoryId))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

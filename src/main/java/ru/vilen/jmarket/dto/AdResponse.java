@@ -10,6 +10,7 @@ public record AdResponse(
         String description,
         BigDecimal price,
         Long authorId,
-        AdStatus status
+        AdStatus status,
+        Long categoryId
 ) {
 }

@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import ru.vilen.jmarket.TestcontainersConfiguration;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.AdStatus;
+import ru.vilen.jmarket.entity.Category;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.specification.AdSpecifications;
 
@@ -34,12 +35,22 @@ class AdRepositoryTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
     private TestEntityManager entityManager;
 
     @Test
     void saveAndFindById_shouldReturnSavedAd() {
         User savedAuthor = saveUser("Ivan", "ivan@example.com");
-        Ad savedAd = saveAd("Phone", "Good phone", "15000.00", savedAuthor, AdStatus.ACTIVE);
+        Ad savedAd = saveAd(
+                "Phone",
+                "Good phone",
+                "15000.00",
+                savedAuthor,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
 
         entityManager.flush();
         entityManager.clear();
@@ -52,6 +63,9 @@ class AdRepositoryTest {
         assertThat(foundAd.getDescription()).isEqualTo("Good phone");
         assertThat(foundAd.getPrice()).isEqualByComparingTo("15000.00");
         assertThat(foundAd.getStatus()).isEqualTo(AdStatus.ACTIVE);
+        assertThat(foundAd.getCategory().getId())
+                .isEqualTo(savedAd.getCategory().getId());
+        assertThat(foundAd.getCategory().getName()).isEqualTo("Электроника");
 
         assertThat(foundAd.getAuthor().getId()).isEqualTo(savedAuthor.getId());
         assertThat(foundAd.getAuthor().getEmail()).isEqualTo("ivan@example.com");
@@ -60,9 +74,30 @@ class AdRepositoryTest {
     @Test
     void findAll_shouldReturnAdsWithinPriceRange_whenPriceSpecificationsAreApplied() {
         User author = saveUser("Ivan", "ivan@example.com");
-        saveAd("PS5", "New PS5", "50000.00", author, AdStatus.ACTIVE);
-        saveAd("PS5 Slim", "New PS5 Slim", "55000.00", author, AdStatus.ACTIVE);
-        saveAd("PS5 Pro", "New PS5 Pro", "62000.00", author, AdStatus.ACTIVE);
+        saveAd(
+                "PS5",
+                "New PS5",
+                "50000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "PS5 Slim",
+                "New PS5 Slim",
+                "55000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "PS5 Pro",
+                "New PS5 Pro",
+                "62000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
 
         entityManager.flush();
         entityManager.clear();
@@ -88,8 +123,22 @@ class AdRepositoryTest {
     void findAll_shouldReturnOnlyAuthorsAds_whenAuthorIdSpecificationIsApplied() {
         User savedAuthor1 = saveUser("Ivan", "ivan@example.com");
         User savedAuthor2 = saveUser("Sergey", "sergey@example.com");
-        saveAd("PS5", "New PS5", "50000.00", savedAuthor1, AdStatus.ACTIVE);
-        saveAd("PS5 Slim", "New PS5 Slim", "55000.00", savedAuthor2, AdStatus.ACTIVE);
+        saveAd(
+                "PS5",
+                "New PS5",
+                "50000.00",
+                savedAuthor1,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "PS5 Slim",
+                "New PS5 Slim",
+                "55000.00",
+                savedAuthor2,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
 
         entityManager.flush();
         entityManager.clear();
@@ -112,9 +161,30 @@ class AdRepositoryTest {
     @Test
     void findAll_shouldReturnAdsMatchingTitleOrDescription_whenQuerySpecificationIsApplied() {
         User author = saveUser("Ivan", "ivan@example.com");
-        saveAd("Phone", "New", "50000.00", author, AdStatus.ACTIVE);
-        saveAd("Accessories", "Case for PHONE", "3000.00", author, AdStatus.ACTIVE);
-        saveAd("Laptop", "Gaming computer", "120000.00", author, AdStatus.ACTIVE);
+        saveAd(
+                "Phone",
+                "New",
+                "50000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "Accessories",
+                "Case for PHONE",
+                "3000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "Laptop",
+                "Gaming computer",
+                "120000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
 
         entityManager.flush();
         entityManager.clear();
@@ -135,9 +205,30 @@ class AdRepositoryTest {
     @Test
     void findAll_shouldReturnOnlySoldAds_whenStatusSpecificationIsApplied() {
         User author = saveUser("Ivan", "ivan@example.com");
-        saveAd("Phone", "New", "50000.00", author, AdStatus.ACTIVE);
-        saveAd("Accessories", "Case for PHONE", "3000.00", author, AdStatus.SOLD);
-        saveAd("Laptop", "Gaming computer", "120000.00", author, AdStatus.ARCHIVED);
+        saveAd(
+                "Phone",
+                "New",
+                "50000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "Accessories",
+                "Case for PHONE",
+                "3000.00",
+                author,
+                AdStatus.SOLD,
+                "Электроника"
+        );
+        saveAd(
+                "Laptop",
+                "Gaming computer",
+                "120000.00",
+                author,
+                AdStatus.ARCHIVED,
+                "Электроника"
+        );
 
         entityManager.flush();
         entityManager.clear();
@@ -168,7 +259,8 @@ class AdRepositoryTest {
             String description,
             String price,
             User author,
-            AdStatus status
+            AdStatus status,
+            String categoryName
     ) {
         Ad ad = new Ad();
         ad.setTitle(title);
@@ -176,7 +268,13 @@ class AdRepositoryTest {
         ad.setPrice(new BigDecimal(price));
         ad.setAuthor(author);
         ad.setStatus(status);
+        ad.setCategory(findCategory(categoryName));
 
         return adRepository.save(ad);
+    }
+
+    private Category findCategory(String name) {
+        return categoryRepository.findByName(name)
+                .orElseThrow();
     }
 }

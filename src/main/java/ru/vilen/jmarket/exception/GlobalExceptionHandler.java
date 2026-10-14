@@ -67,4 +67,16 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(errorResponse);
     }
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCategoryNotFoundException(
+            CategoryNotFoundException ex
+    ) {
+        ErrorResponse errorResponse =
+                new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(errorResponse);
+    }
 }

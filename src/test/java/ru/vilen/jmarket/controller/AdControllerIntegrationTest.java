@@ -12,6 +12,7 @@ import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.AdStatus;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.repository.AdRepository;
+import ru.vilen.jmarket.repository.CategoryRepository;
 import ru.vilen.jmarket.repository.UserRepository;
 
 import java.math.BigDecimal;
@@ -36,6 +37,9 @@ class AdControllerIntegrationTest {
 
     @Autowired
     private AdRepository adRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @BeforeEach
     void cleanDatabase() {
@@ -93,6 +97,7 @@ class AdControllerIntegrationTest {
         ad.setPrice(new BigDecimal(price));
         ad.setAuthor(author);
         ad.setStatus(status);
+        ad.setCategory(categoryRepository.findByName("Электроника").orElseThrow());
 
         return adRepository.save(ad);
     }

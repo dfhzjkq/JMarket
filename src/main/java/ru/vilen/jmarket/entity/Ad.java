@@ -44,4 +44,8 @@ public class Ad {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 10)
     private AdStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 }

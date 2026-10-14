@@ -8,11 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.vilen.jmarket.dto.*;
 import ru.vilen.jmarket.entity.Ad;
 import ru.vilen.jmarket.entity.AdStatus;
+import ru.vilen.jmarket.entity.Category;
 import ru.vilen.jmarket.entity.User;
 import ru.vilen.jmarket.exception.AdAccessDeniedException;
 import ru.vilen.jmarket.exception.AdNotFoundException;
+import ru.vilen.jmarket.exception.CategoryNotFoundException;
 import ru.vilen.jmarket.exception.UserNotFoundException;
 import ru.vilen.jmarket.repository.AdRepository;
+import ru.vilen.jmarket.repository.CategoryRepository;
 import ru.vilen.jmarket.repository.UserRepository;
 
 import org.springframework.data.domain.Pageable;
@@ -26,13 +29,17 @@ public class AdService {
 
     private final AdRepository adRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
 
     @Transactional
     public AdResponse create(AdCreateRequest request, String authorEmail) {
         User author = userRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new UserNotFoundException(authorEmail));
 
-        Ad ad = toEntity(request, author);
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new CategoryNotFoundException(request.categoryId()));
+
+        Ad ad = toEntity(request, author, category);
         Ad savedAd = adRepository.save(ad);
         return toResponse(savedAd);
     }
@@ -121,13 +128,14 @@ public class AdService {
         return toResponse(ad);
     }
 
-    private Ad toEntity(AdCreateRequest request, User author) {
+    private Ad toEntity(AdCreateRequest request, User author, Category category) {
         Ad ad = new Ad();
         ad.setTitle(request.title());
         ad.setDescription(request.description());
         ad.setPrice(request.price());
         ad.setAuthor(author);
         ad.setStatus(AdStatus.ACTIVE);
+        ad.setCategory(category);
         return ad;
     }
 
@@ -138,7 +146,8 @@ public class AdService {
                 ad.getDescription(),
                 ad.getPrice(),
                 ad.getAuthor().getId(),
-                ad.getStatus()
+                ad.getStatus(),
+                ad.getCategory().getId()
         );
     }
 }
