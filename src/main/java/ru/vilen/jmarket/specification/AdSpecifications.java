@@ -73,4 +73,13 @@ public final class AdSpecifications {
         return (root, query, criteriaBuilder) ->
                 criteriaBuilder.equal(root.get("status"), status);
     }
+
+    public static Specification<Ad> hasCategoryId(Long categoryId) {
+        if (categoryId == null) {
+            return Specification.unrestricted();
+        }
+
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("category").get("id"), categoryId);
+    }
 }

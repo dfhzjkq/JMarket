@@ -245,6 +245,46 @@ class AdRepositoryTest {
                 .satisfies(ad -> assertThat(ad.getStatus()).isEqualTo(AdStatus.SOLD));
     }
 
+    @Test
+    void findAll_shouldReturnOnlyCategoryAds_whenCategorySpecificationIsApplied() {
+        User author = saveUser("Ivan", "ivan@example.com");
+        saveAd(
+                "Phone",
+                "New phone",
+                "50000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Электроника"
+        );
+        saveAd(
+                "Bicycle",
+                "Mountain bike",
+                "30000.00",
+                author,
+                AdStatus.ACTIVE,
+                "Транспорт"
+        );
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Long electronicsId = findCategory("Электроника").getId();
+
+        Specification<Ad> specification =
+                AdSpecifications.hasCategoryId(electronicsId);
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<Ad> adPage = adRepository.findAll(specification, pageable);
+
+        assertThat(adPage.getContent())
+                .singleElement()
+                .satisfies(ad -> {
+                    assertThat(ad.getTitle()).isEqualTo("Phone");
+                    assertThat(ad.getCategory().getId()).isEqualTo(electronicsId);
+                });
+    }
+
     private User saveUser(String name, String email) {
         User user = new User();
         user.setName(name);

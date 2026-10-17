@@ -53,7 +53,8 @@ public class AdService {
                 AdSpecifications.hasMinPrice(adFilter.minPrice()),
                 AdSpecifications.hasMaxPrice(adFilter.maxPrice()),
                 AdSpecifications.hasAuthorId(adFilter.authorId()),
-                AdSpecifications.hasStatus(statusToFilter)
+                AdSpecifications.hasStatus(statusToFilter),
+                AdSpecifications.hasCategoryId(adFilter.categoryId())
         );
 
         Page<Ad> adPage = adRepository.findAll(specification, pageable);

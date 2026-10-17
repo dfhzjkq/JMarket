@@ -11,6 +11,7 @@ public record AdFilter(
     @DecimalMin("0.00") BigDecimal minPrice,
     @DecimalMin("0.00") BigDecimal maxPrice,
     @Positive Long authorId,
-    AdStatus status
+    AdStatus status,
+    @Positive Long categoryId
 ) {
 }

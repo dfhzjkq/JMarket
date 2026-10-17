@@ -476,6 +476,57 @@ class AdControllerTest {
     }
 
     @Test
+    void findAll_shouldBindCategoryIdFilter_whenCategoryIdParameterIsProvided() throws Exception {
+        AdPageResponse response = new AdPageResponse(
+                List.of(),
+                0,
+                20,
+                0,
+                0,
+                true,
+                true
+        );
+
+        when(adService.findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(get("/api/ads")
+                        .param("categoryId", "3")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<AdFilter> filterCaptor =
+                ArgumentCaptor.forClass(AdFilter.class);
+
+        verify(adService).findAll(
+                any(Pageable.class),
+                filterCaptor.capture()
+        );
+
+        AdFilter actualFilter = filterCaptor.getValue();
+        assertThat(actualFilter.categoryId())
+                .isEqualTo(3L);
+    }
+
+    @Test
+    void findAll_shouldReturnBadRequest_whenCategoryIdIsNotPositive() throws Exception {
+        mockMvc.perform(get("/api/ads")
+                        .param("categoryId", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Validation failed for one or more arguments"));
+
+        verify(adService, never()).findAll(
+                any(Pageable.class),
+                any(AdFilter.class)
+        );
+    }
+
+    @Test
     void findAll_shouldBindQueryFilter_whenQueryParameterIsProvided() throws Exception {
         AdPageResponse response = new AdPageResponse(
                 List.of(),
